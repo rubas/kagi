@@ -71,55 +71,22 @@ jobs:
           Linux x86_64:
 
           ```bash
-          repo="${GITHUB_REPOSITORY}"
-          version="${GITHUB_REF_NAME}"
-          tmp="$(mktemp -d)"
-          gh release download "$version" --repo "$repo" --pattern 'kagi-linux-x86_64.tar.gz' --dir "$tmp"
-          tar -xzf "$tmp/kagi-linux-x86_64.tar.gz" -C "$tmp"
-          install -d "$HOME/.local/bin" "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize"
-          install -m 755 "$tmp/kagi-linux-x86_64/bin/kagi-search" "$HOME/.local/bin/kagi-search"
-          install -m 755 "$tmp/kagi-linux-x86_64/bin/kagi-summarize" "$HOME/.local/bin/kagi-summarize"
-          install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md"
-          install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md"
-          install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md"
-          install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md"
-          rm -rf "$tmp"
+          repo="rubas/kagi"; version="__VERSION__"; tmp="$(mktemp -d)"; gh release download "$version" --repo "$repo" --pattern 'kagi-linux-x86_64.tar.gz' --dir "$tmp" && tar -xzf "$tmp/kagi-linux-x86_64.tar.gz" -C "$tmp" && install -d "$HOME/.local/bin" "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize" && install -m 755 "$tmp/kagi-linux-x86_64/bin/kagi-search" "$HOME/.local/bin/kagi-search" && install -m 755 "$tmp/kagi-linux-x86_64/bin/kagi-summarize" "$HOME/.local/bin/kagi-summarize" && install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md" && install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md" && rm -rf "$tmp"
           ```
 
           macOS arm64:
 
           ```bash
-          repo="${GITHUB_REPOSITORY}"
-          version="${GITHUB_REF_NAME}"
-          tmp="$(mktemp -d)"
-          gh release download "$version" --repo "$repo" --pattern 'kagi-macos-aarch64.tar.gz' --dir "$tmp"
-          tar -xzf "$tmp/kagi-macos-aarch64.tar.gz" -C "$tmp"
-          install -d "$HOME/.local/bin" "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize"
-          install -m 755 "$tmp/kagi-macos-aarch64/bin/kagi-search" "$HOME/.local/bin/kagi-search"
-          install -m 755 "$tmp/kagi-macos-aarch64/bin/kagi-summarize" "$HOME/.local/bin/kagi-summarize"
-          install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md"
-          install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md"
-          install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md"
-          install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md"
-          rm -rf "$tmp"
+          repo="rubas/kagi"; version="__VERSION__"; tmp="$(mktemp -d)"; gh release download "$version" --repo "$repo" --pattern 'kagi-macos-aarch64.tar.gz' --dir "$tmp" && tar -xzf "$tmp/kagi-macos-aarch64.tar.gz" -C "$tmp" && install -d "$HOME/.local/bin" "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize" && install -m 755 "$tmp/kagi-macos-aarch64/bin/kagi-search" "$HOME/.local/bin/kagi-search" && install -m 755 "$tmp/kagi-macos-aarch64/bin/kagi-summarize" "$HOME/.local/bin/kagi-summarize" && install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md" && install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md" && rm -rf "$tmp"
           ```
 
           Skills only:
 
           ```bash
-          repo="${GITHUB_REPOSITORY}"
-          version="${GITHUB_REF_NAME}"
-          tmp="$(mktemp -d)"
-          gh release download "$version" --repo "$repo" --pattern 'kagi-skills.tar.gz' --dir "$tmp"
-          tar -xzf "$tmp/kagi-skills.tar.gz" -C "$tmp"
-          install -d "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize"
-          install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md"
-          install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md"
-          install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md"
-          install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md"
-          rm -rf "$tmp"
+          repo="rubas/kagi"; version="__VERSION__"; tmp="$(mktemp -d)"; gh release download "$version" --repo "$repo" --pattern 'kagi-skills.tar.gz' --dir "$tmp" && tar -xzf "$tmp/kagi-skills.tar.gz" -C "$tmp" && install -d "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize" && install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md" && install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md" && rm -rf "$tmp"
           ```
           EOF
+          sed -i "s/__VERSION__/${GITHUB_REF_NAME}/g" release-notes.md
       - uses: softprops/action-gh-release@v2
         with:
           body_path: release-notes.md
