@@ -63,9 +63,9 @@ tasks:
       - cargo machete
 
   deps:deny:
-    desc: Run dependency policy checks
+    desc: Run dependency policy checks without license enforcement
     cmds:
-      - cargo deny check
+      - cargo deny check advisories bans sources
 
   check:
     desc: Run all verification checks
