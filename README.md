@@ -135,7 +135,7 @@ Captured fields include:
 ## Release
 
 To produce a release, bump the version in `Cargo.toml` in the PR that you want to release and merge that PR to `main`.
-A workflow on `main` creates the matching `vX.Y.Z` tag automatically, and that tag triggers the release workflow.
+The `tag-on-version-bump` workflow creates the matching `vX.Y.Z` tag, builds the release archives, and publishes the GitHub release in the same run.
 The GitHub release notes include copy-paste install commands for each platform.
 
 ## Skills

@@ -33,8 +33,8 @@ Rust CLI repo for `kagi-search` and `kagi-summarize`.
 ## Release Flow
 
 - Releases are created when a commit merged to `main` bumps the package version in `Cargo.toml`.
-- The tag is created automatically as `v<version>`.
-- The tag then triggers the `release` workflow.
+- The `tag-on-version-bump` workflow creates the matching `v<version>` tag and publishes the GitHub release itself.
+- The tag-triggered `release` workflow remains a manual fallback for hand-pushed tags.
 - Do not push release tags by hand unless the automation failed and you are recovering it deliberately.
 
 Exact sequence:
@@ -43,8 +43,7 @@ Exact sequence:
 2. Open the PR.
 3. Merge the PR to `main`.
 4. The `tag-on-version-bump` workflow compares the new `Cargo.toml` version on `main` with the previous commit.
-5. If the version changed, it creates and pushes `vX.Y.Z`.
-6. The `release` workflow publishes the tarballs and release notes from that tag.
+5. If the version changed, it creates and pushes `vX.Y.Z`, builds the archives, and publishes the release.
 
 - No version bump in `Cargo.toml` means no release.
 - One version bump merged to `main` means one release attempt.
