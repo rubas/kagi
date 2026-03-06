@@ -38,9 +38,24 @@ jobs:
           name: ${{ matrix.archive }}
           path: ${{ matrix.archive }}
 
+  skills:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Package skills archive
+        run: |
+          mkdir -p kagi-skills/kagi-search kagi-skills/kagi-summarize
+          cp skills/search/SKILL.md kagi-skills/kagi-search/SKILL.md
+          cp skills/summarize/SKILL.md kagi-skills/kagi-summarize/SKILL.md
+          tar -czf kagi-skills.tar.gz kagi-skills
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kagi-skills.tar.gz
+          path: kagi-skills.tar.gz
+
   release:
     runs-on: ubuntu-latest
-    needs: build
+    needs: [build, skills]
     permissions:
       contents: write
     steps:
@@ -88,6 +103,22 @@ jobs:
           install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md"
           rm -rf "$tmp"
           ```
+
+          Skills only:
+
+          ```bash
+          repo="${GITHUB_REPOSITORY}"
+          version="${GITHUB_REF_NAME}"
+          tmp="$(mktemp -d)"
+          gh release download "$version" --repo "$repo" --pattern 'kagi-skills.tar.gz' --dir "$tmp"
+          tar -xzf "$tmp/kagi-skills.tar.gz" -C "$tmp"
+          install -d "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize"
+          install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md"
+          install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md"
+          install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md"
+          install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md"
+          rm -rf "$tmp"
+          ```
           EOF
       - uses: softprops/action-gh-release@v2
         with:
@@ -95,3 +126,4 @@ jobs:
           files: |
             dist/kagi-linux-x86_64.tar.gz
             dist/kagi-macos-aarch64.tar.gz
+            dist/kagi-skills.tar.gz
