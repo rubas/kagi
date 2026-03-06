@@ -1,0 +1,2 @@
+hi:{"v":"123"}[NUL]
+new_message.json:{"state":"done","md":"# Summary\nThis is the summary."}[NUL]

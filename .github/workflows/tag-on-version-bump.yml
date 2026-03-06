@@ -1,0 +1,55 @@
+name: tag-on-version-bump
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read current and previous Cargo version
+        id: version
+        run: |
+          current_version="$(sed -n 's/^version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n1)"
+          previous_version="$(git show HEAD^:Cargo.toml 2>/dev/null | sed -n 's/^version = "\([^"]*\)"$/\1/p' | head -n1)"
+
+          if [ -z "$current_version" ]; then
+            echo "Failed to read current Cargo.toml version" >&2
+            exit 1
+          fi
+
+          echo "current=$current_version" >> "$GITHUB_OUTPUT"
+          echo "previous=$previous_version" >> "$GITHUB_OUTPUT"
+
+      - name: Skip if version did not change
+        if: steps.version.outputs.current == steps.version.outputs.previous
+        run: echo "Cargo.toml version unchanged; no release tag created"
+
+      - name: Skip if release tag already exists
+        if: steps.version.outputs.current != steps.version.outputs.previous
+        id: existing-tag
+        run: |
+          if git rev-parse -q --verify "refs/tags/v${{ steps.version.outputs.current }}" >/dev/null; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "Tag v${{ steps.version.outputs.current }} already exists; skipping"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create and push release tag
+        if: steps.version.outputs.current != steps.version.outputs.previous && steps.existing-tag.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.current }}
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git tag "v$VERSION"
+          git push origin "v$VERSION"

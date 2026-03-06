@@ -1,0 +1,100 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    # Optional: Only run on specific file changes
+    # paths:
+    #   - "src/**/*.ts"
+    #   - "src/**/*.tsx"
+    #   - "src/**/*.js"
+    #   - "src/**/*.jsx"
+
+jobs:
+  claude-review:
+    # Optional: Filter by PR author
+    # if: |
+    #   github.event.pull_request.user.login == 'external-contributor' ||
+    #   github.event.pull_request.user.login == 'new-developer' ||
+    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@beta
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4.1)
+          # model: "opus"
+
+          # Direct prompt for automated review (no @claude mention needed)
+          direct_prompt: |
+            Review this pull request. Read AGENTS.md and MEMORY.md (if they exist) first to understand project rules and known gotchas.
+
+            Launch 2 agents in parallel:
+
+            **Agent 1 (opus): Bug and security review**
+            Read AGENTS.md and MEMORY.md first. Then read the diff and all changed files with surrounding context. Use git blame/history when needed to understand intent.
+
+            Check for:
+            - Logic errors that will produce wrong results
+            - Security issues: injection, auth bypass, data exposure
+            - Breaking changes: removed exports, changed APIs, schema mismatches
+            - Missing imports, type errors, syntax errors
+            - Patterns that contradict MEMORY.md lessons (repeated past mistakes)
+            - Data integrity: silent data loss, unsafe retries, missing failure handling on critical paths
+
+            Before reporting an issue, re-read the relevant code to confirm it is real. If unsure, skip it.
+
+            **Agent 2 (sonnet): AGENTS.md compliance**
+            Read AGENTS.md and MEMORY.md first. Check if changes violate any project rules defined there. Only flag violations where you can quote the exact rule broken. If compliant, return nothing.
+
+            **Both agents ignore:** style, formatting, hypothetical edge cases, pre-existing issues not introduced in this PR, anything linters catch.
+
+            **After both return:**
+
+            If no issues: "No issues found."
+
+            For each unique issue:
+            - Brief description
+            - Link: https://github.com/{owner}/{repo}/blob/{full-sha}/path/file.ext#L{start}-L{end}
+            - Small fix: code suggestion. Large fix: describe the fix.
+
+            One comment per issue. No duplicates.
+
+          # Optional: Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
+          use_sticky_comment: true
+
+          # Optional: Customize review based on file types
+          # direct_prompt: |
+          #   Review this PR focusing on:
+          #   - For TypeScript files: Type safety and proper interface usage
+          #   - For API endpoints: Security, input validation, and error handling
+          #   - For React components: Performance, accessibility, and best practices
+          #   - For tests: Coverage, edge cases, and test quality
+
+          # Optional: Different prompts for different authors
+          # direct_prompt: |
+          #   ${{ github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' &&
+          #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
+          #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
+
+          # Optional: Add specific tools for running tests or linting
+          # allowed_tools: "Bash(pnpm run test),Bash(pnpm run lint),Bash(pnpm run typecheck)"
+
+          # Optional: Skip review for certain conditions
+          # if: |
+          #   !contains(github.event.pull_request.title, '[skip-review]') &&
+          #   !contains(github.event.pull_request.title, '[WIP]')

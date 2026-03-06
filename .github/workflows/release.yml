@@ -1,0 +1,97 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            archive: kagi-linux-x86_64.tar.gz
+            staging: kagi-linux-x86_64
+          - os: macos-latest
+            archive: kagi-macos-aarch64.tar.gz
+            staging: kagi-macos-aarch64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo build --release
+      - name: Package release archive
+        run: |
+          mkdir -p "${{ matrix.staging }}/bin" \
+            "${{ matrix.staging }}/skills/kagi-search" \
+            "${{ matrix.staging }}/skills/kagi-summarize"
+          cp target/release/kagi-search "${{ matrix.staging }}/bin/"
+          cp target/release/kagi-summarize "${{ matrix.staging }}/bin/"
+          cp skills/search/SKILL.md "${{ matrix.staging }}/skills/kagi-search/SKILL.md"
+          cp skills/summarize/SKILL.md "${{ matrix.staging }}/skills/kagi-summarize/SKILL.md"
+          tar -czf "${{ matrix.archive }}" "${{ matrix.staging }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.archive }}
+          path: ${{ matrix.archive }}
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Write release notes
+        run: |
+          cat <<'EOF' > release-notes.md
+          ## Install
+
+          Linux x86_64:
+
+          ```bash
+          repo="${GITHUB_REPOSITORY}"
+          version="${GITHUB_REF_NAME}"
+          tmp="$(mktemp -d)"
+          gh release download "$version" --repo "$repo" --pattern 'kagi-linux-x86_64.tar.gz' --dir "$tmp"
+          tar -xzf "$tmp/kagi-linux-x86_64.tar.gz" -C "$tmp"
+          install -d "$HOME/.local/bin" "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize"
+          install -m 755 "$tmp/kagi-linux-x86_64/bin/kagi-search" "$HOME/.local/bin/kagi-search"
+          install -m 755 "$tmp/kagi-linux-x86_64/bin/kagi-summarize" "$HOME/.local/bin/kagi-summarize"
+          install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md"
+          install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md"
+          install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md"
+          install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md"
+          rm -rf "$tmp"
+          ```
+
+          macOS arm64:
+
+          ```bash
+          repo="${GITHUB_REPOSITORY}"
+          version="${GITHUB_REF_NAME}"
+          tmp="$(mktemp -d)"
+          gh release download "$version" --repo "$repo" --pattern 'kagi-macos-aarch64.tar.gz' --dir "$tmp"
+          tar -xzf "$tmp/kagi-macos-aarch64.tar.gz" -C "$tmp"
+          install -d "$HOME/.local/bin" "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize"
+          install -m 755 "$tmp/kagi-macos-aarch64/bin/kagi-search" "$HOME/.local/bin/kagi-search"
+          install -m 755 "$tmp/kagi-macos-aarch64/bin/kagi-summarize" "$HOME/.local/bin/kagi-summarize"
+          install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md"
+          install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md"
+          install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md"
+          install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md"
+          rm -rf "$tmp"
+          ```
+          EOF
+      - uses: softprops/action-gh-release@v2
+        with:
+          body_path: release-notes.md
+          files: |
+            dist/kagi-linux-x86_64.tar.gz
+            dist/kagi-macos-aarch64.tar.gz
