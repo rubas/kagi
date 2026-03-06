@@ -115,9 +115,20 @@ jobs:
           name: kagi-skills.tar.gz
           path: kagi-skills.tar.gz
 
+  installer:
+    needs: detect
+    if: needs.detect.outputs.should_release == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: install.sh
+          path: install.sh
+
   release:
     runs-on: ubuntu-latest
-    needs: [detect, build, skills]
+    needs: [detect, build, skills, installer]
     if: needs.detect.outputs.should_release == 'true'
     permissions:
       contents: write
@@ -133,22 +144,10 @@ jobs:
           cat <<'EOF' > release-notes.md
           ## Install
 
-          Linux x86_64:
+          Installs binaries to `~/.local/bin` and skills to both `~/.agents/skills` and `~/.claude/skills`.
 
           ```bash
-          repo="rubas/kagi"; version="v__VERSION__"; tmp="$(mktemp -d)"; gh release download "$version" --repo "$repo" --pattern 'kagi-linux-x86_64.tar.gz' --dir "$tmp" && tar -xzf "$tmp/kagi-linux-x86_64.tar.gz" -C "$tmp" && install -d "$HOME/.local/bin" "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize" && install -m 755 "$tmp/kagi-linux-x86_64/bin/kagi-search" "$HOME/.local/bin/kagi-search" && install -m 755 "$tmp/kagi-linux-x86_64/bin/kagi-summarize" "$HOME/.local/bin/kagi-summarize" && install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md" && install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-linux-x86_64/skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md" && rm -rf "$tmp"
-          ```
-
-          macOS arm64:
-
-          ```bash
-          repo="rubas/kagi"; version="v__VERSION__"; tmp="$(mktemp -d)"; gh release download "$version" --repo "$repo" --pattern 'kagi-macos-aarch64.tar.gz' --dir "$tmp" && tar -xzf "$tmp/kagi-macos-aarch64.tar.gz" -C "$tmp" && install -d "$HOME/.local/bin" "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize" && install -m 755 "$tmp/kagi-macos-aarch64/bin/kagi-search" "$HOME/.local/bin/kagi-search" && install -m 755 "$tmp/kagi-macos-aarch64/bin/kagi-summarize" "$HOME/.local/bin/kagi-summarize" && install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md" && install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-macos-aarch64/skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md" && rm -rf "$tmp"
-          ```
-
-          Skills only:
-
-          ```bash
-          repo="rubas/kagi"; version="v__VERSION__"; tmp="$(mktemp -d)"; gh release download "$version" --repo "$repo" --pattern 'kagi-skills.tar.gz' --dir "$tmp" && tar -xzf "$tmp/kagi-skills.tar.gz" -C "$tmp" && install -d "$HOME/.agents/skills/kagi-search" "$HOME/.agents/skills/kagi-summarize" "$HOME/.claude/skills/kagi-search" "$HOME/.claude/skills/kagi-summarize" && install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "$HOME/.agents/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "$HOME/.agents/skills/kagi-summarize/SKILL.md" && install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "$HOME/.claude/skills/kagi-search/SKILL.md" && install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "$HOME/.claude/skills/kagi-summarize/SKILL.md" && rm -rf "$tmp"
+          tmp="$(mktemp -d)" && gh release download "v__VERSION__" --repo "rubas/kagi" --pattern 'install.sh' --dir "$tmp" && sh "$tmp/install.sh" "v__VERSION__" && rm -rf "$tmp"
           ```
           EOF
           sed -i "s/__VERSION__/${VERSION}/g" release-notes.md
@@ -160,3 +159,4 @@ jobs:
             dist/kagi-linux-x86_64.tar.gz
             dist/kagi-macos-aarch64.tar.gz
             dist/kagi-skills.tar.gz
+            dist/install.sh

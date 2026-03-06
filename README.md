@@ -136,7 +136,7 @@ Captured fields include:
 
 To produce a release, bump the version in `Cargo.toml` in the PR that you want to release and merge that PR to `main`.
 The `tag-on-version-bump` workflow creates the matching `vX.Y.Z` tag, builds the release archives, and publishes the GitHub release in the same run.
-The GitHub release notes include one-command install blocks for each platform, and the release assets also include a separate `kagi-skills.tar.gz`.
+The GitHub release notes include a one-command installer based on the `install.sh` asset, and the release assets also include a separate `kagi-skills.tar.gz`.
 
 ## Skills
 
