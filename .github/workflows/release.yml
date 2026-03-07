@@ -1,12 +1,95 @@
-name: release
+name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag such as v0.1.0
+        required: false
+        type: string
+      ref:
+        description: Git ref to build from, usually refs/tags/vX.Y.Z for recovery runs
+        required: false
+        default: main
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      should_release: ${{ steps.prepare.outputs.should_release }}
+      create_tag: ${{ steps.prepare.outputs.create_tag }}
+      tag: ${{ steps.prepare.outputs.tag }}
+      ref: ${{ steps.prepare.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: prepare
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ inputs.tag }}" ]; then
+            echo "should_release=true" >> "$GITHUB_OUTPUT"
+            echo "create_tag=false" >> "$GITHUB_OUTPUT"
+            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+            echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          current_version="$(sed -n 's/^version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n1)"
+          previous_version="$(git show HEAD^:Cargo.toml 2>/dev/null | sed -n 's/^version = "\([^"]*\)"$/\1/p' | head -n1)"
+
+          if [ -z "$current_version" ] || [ "$current_version" = "$previous_version" ]; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "create_tag=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if git rev-parse -q --verify "refs/tags/v$current_version" >/dev/null; then
+            echo "should_release=false" >> "$GITHUB_OUTPUT"
+            echo "create_tag=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "should_release=true" >> "$GITHUB_OUTPUT"
+          echo "create_tag=true" >> "$GITHUB_OUTPUT"
+          echo "tag=v$current_version" >> "$GITHUB_OUTPUT"
+          echo "ref=refs/tags/v$current_version" >> "$GITHUB_OUTPUT"
+
+  tag:
+    runs-on: ubuntu-latest
+    needs: prepare
+    if: needs.prepare.outputs.create_tag == 'true'
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create and push release tag
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git tag "${{ needs.prepare.outputs.tag }}"
+          git push origin "${{ needs.prepare.outputs.tag }}"
+
   build:
+    needs: [prepare, tag]
+    if: needs.prepare.outputs.should_release == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -20,6 +103,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo build --release
@@ -39,9 +124,13 @@ jobs:
           path: ${{ matrix.archive }}
 
   skills:
+    needs: [prepare, tag]
+    if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
       - name: Package skills archive
         run: |
           mkdir -p kagi-skills/kagi-search kagi-skills/kagi-summarize
@@ -54,9 +143,13 @@ jobs:
           path: kagi-skills.tar.gz
 
   installer:
+    needs: [prepare, tag]
+    if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
       - uses: actions/upload-artifact@v4
         with:
           name: install.sh
@@ -64,28 +157,25 @@ jobs:
 
   release:
     runs-on: ubuntu-latest
-    needs: [build, skills, installer]
-    permissions:
-      contents: write
+    needs: [prepare, build, skills, installer]
+    if: needs.prepare.outputs.should_release == 'true'
     steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.ref }}
+
       - uses: actions/download-artifact@v4
         with:
           path: dist
           merge-multiple: true
       - name: Write release notes
+        shell: bash
         run: |
-          cat <<'EOF' > release-notes.md
-          ## Install
-
-          Installs binaries to `~/.local/bin` and skills to both `~/.agents/skills` and `~/.claude/skills`.
-
-          ```bash
-          tmp="$(mktemp -d)" && gh release download "__VERSION__" --repo "rubas/kagi" --pattern 'install.sh' --dir "$tmp" && sh "$tmp/install.sh" "__VERSION__" && rm -rf "$tmp"
-          ```
-          EOF
-          sed -i "s/__VERSION__/${GITHUB_REF_NAME}/g" release-notes.md
+          cp .github/release-notes.md release-notes.md
+          sed -i "s/__VERSION__/${{ needs.prepare.outputs.tag }}/g" release-notes.md
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
           body_path: release-notes.md
           files: |
             dist/kagi-linux-x86_64.tar.gz
