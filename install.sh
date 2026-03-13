@@ -6,14 +6,11 @@ version="${1:-${KAGI_INSTALL_VERSION:-}}"
 
 if [ -z "$version" ]; then
   echo "usage: install.sh <version-tag>" >&2
-  echo "example: install.sh v0.1.3" >&2
+  echo "example: install.sh v0.1.5" >&2
   exit 1
 fi
 
-if ! command -v gh >/dev/null 2>&1; then
-  echo "gh is required to install from the private GitHub release" >&2
-  exit 1
-fi
+base_url="https://github.com/${repo}/releases/download/${version}"
 
 os="$(uname -s)"
 arch="$(uname -m)"
@@ -39,7 +36,8 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-gh release download "$version" --repo "$repo" --pattern "$archive" --pattern "kagi-skills.tar.gz" --dir "$tmp"
+curl -fSL "${base_url}/${archive}" -o "$tmp/$archive"
+curl -fSL "${base_url}/kagi-skills.tar.gz" -o "$tmp/kagi-skills.tar.gz"
 
 tar -xzf "$tmp/$archive" -C "$tmp"
 tar -xzf "$tmp/kagi-skills.tar.gz" -C "$tmp"

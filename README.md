@@ -1,6 +1,6 @@
 # kagi
 
-Unix-style Kagi CLI tools.
+Unofficial Unix-style CLI tools for [Kagi Search](https://kagi.com). Not affiliated with or endorsed by Kagi Inc.
 
 Each binary does one job:
 
@@ -9,33 +9,39 @@ Each binary does one job:
 
 Output is plain text by default and compact JSON with `--json`, so it works well for terminal use and agentic pipelines.
 
-## Authentication
-
-Authentication precedence:
-
-1. `KAGI_SESSION_TOKEN`
-2. `$XDG_CONFIG_HOME/kagi/session-token`
-3. otherwise fail
-
-For normal local use, the config-file fallback is:
-
-- `$XDG_CONFIG_HOME/kagi/session-token`
-
-The binaries never embed secrets.
+Requires a Kagi account with an active session token.
 
 ## Install
 
-From a local checkout:
+### From a GitHub release
 
 ```bash
-task install
+curl -fSL https://github.com/rubas/kagi/releases/download/v0.1.5/install.sh | sh -s v0.1.5
 ```
 
-That installs:
+This installs:
 
 - `kagi-search` and `kagi-summarize` to `~/.local/bin`
 - skills to `~/.agents/skills/kagi-search`, `~/.agents/skills/kagi-summarize`
 - skills to `~/.claude/skills/kagi-search`, `~/.claude/skills/kagi-summarize`
+
+Supported platforms: Linux x86_64 and macOS aarch64.
+
+### From source
+
+```bash
+cargo install --git https://github.com/rubas/kagi.git
+```
+
+## Authentication
+
+You need a Kagi session token. The binaries check these sources in order:
+
+1. `KAGI_SESSION_TOKEN` environment variable
+2. `$XDG_CONFIG_HOME/kagi/session-token` file
+3. Fail with an error if neither is set
+
+The binaries never embed or store secrets.
 
 ## Binaries
 
@@ -113,34 +119,13 @@ kagi-summarize 'https://www.rust-lang.org/learn' --lang DE --json
 - text: raw markdown summary
 - json: `{ "summary": "..." }`
 
-## Notes
-
-- Both binaries fail fast if no session token is available.
-- Local fallback token file uses XDG config resolution.
-- `kagi-search` and `kagi-summarize` are intentionally separate commands.
-- The repo does not store secrets in code or config files.
-
-## Telemetry
-
-Both binaries export OpenTelemetry traces to the same Incus/SigNoz stack used by your other tools.
-Tracing setup is best-effort: if exporter initialization fails, the command still runs normally.
-
-Captured fields include:
-
-- command status and duration
-- search query, result count, related count
-- summarize URL, summary type, summary length
-- error type for request, timeout, HTTP status, and parse failures
-
-## Release
-
-To produce a release, bump the version in `Cargo.toml` in the PR that you want to release and merge that PR to `main`.
-The `release` workflow detects the version bump, creates the matching `vX.Y.Z` tag, builds the release archives from that tag, and publishes the GitHub release in the same run.
-The GitHub release notes include a one-command installer based on the `install.sh` asset, and the release assets also include a separate `kagi-skills.tar.gz`.
-
 ## Skills
 
-This repo also ships companion skills:
+This repo ships companion skills for Claude Code and other agents:
 
 - [`skills/search/SKILL.md`](skills/search/SKILL.md)
 - [`skills/summarize/SKILL.md`](skills/summarize/SKILL.md)
+
+## License
+
+[MIT](LICENSE)

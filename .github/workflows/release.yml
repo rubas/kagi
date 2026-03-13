@@ -34,7 +34,7 @@ jobs:
       tag: ${{ steps.prepare.outputs.tag }}
       ref: ${{ steps.prepare.outputs.ref }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -76,7 +76,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - name: Create and push release tag
@@ -102,11 +102,13 @@ jobs:
             staging: kagi-macos-aarch64
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ needs.prepare.outputs.ref }}
-      - uses: dtolnay/rust-toolchain@stable
-      - uses: Swatinem/rust-cache@v2
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # stable
+        with:
+          toolchain: stable
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
       - run: cargo build --release
       - name: Package release archive
         run: |
@@ -118,7 +120,7 @@ jobs:
           cp skills/search/SKILL.md "${{ matrix.staging }}/skills/kagi-search/SKILL.md"
           cp skills/summarize/SKILL.md "${{ matrix.staging }}/skills/kagi-summarize/SKILL.md"
           tar -czf "${{ matrix.archive }}" "${{ matrix.staging }}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: ${{ matrix.archive }}
           path: ${{ matrix.archive }}
@@ -128,7 +130,7 @@ jobs:
     if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ needs.prepare.outputs.ref }}
       - name: Package skills archive
@@ -137,7 +139,7 @@ jobs:
           cp skills/search/SKILL.md kagi-skills/kagi-search/SKILL.md
           cp skills/summarize/SKILL.md kagi-skills/kagi-summarize/SKILL.md
           tar -czf kagi-skills.tar.gz kagi-skills
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: kagi-skills.tar.gz
           path: kagi-skills.tar.gz
@@ -147,10 +149,10 @@ jobs:
     if: needs.prepare.outputs.should_release == 'true'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ needs.prepare.outputs.ref }}
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: install.sh
           path: install.sh
@@ -160,11 +162,11 @@ jobs:
     needs: [prepare, build, skills, installer]
     if: needs.prepare.outputs.should_release == 'true'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           ref: ${{ needs.prepare.outputs.ref }}
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           path: dist
           merge-multiple: true
@@ -173,7 +175,7 @@ jobs:
         run: |
           cp .github/release-notes.md release-notes.md
           sed -i "s/__VERSION__/${{ needs.prepare.outputs.tag }}/g" release-notes.md
-      - uses: softprops/action-gh-release@v2
+      - uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
           body_path: release-notes.md

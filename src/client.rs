@@ -1,10 +1,9 @@
 use std::ffi::OsString;
 use std::path::PathBuf;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 
 use rquest::Client;
 use rquest_util::Emulation;
-use tracing::instrument;
 
 use crate::cli::{SearchArgs, SummarizeArgs};
 use crate::error::Error;
@@ -16,25 +15,10 @@ const SESSION_TOKEN_ENV: &str = "KAGI_SESSION_TOKEN";
 const XDG_CONFIG_ENV: &str = "XDG_CONFIG_HOME";
 const SESSION_TOKEN_RELATIVE_PATH: &str = "kagi/session-token";
 
-#[instrument(
-    skip(args),
-    fields(
-        query = tracing::field::Empty,
-        limit = args.limit,
-        result_count = tracing::field::Empty,
-        related_count = tracing::field::Empty,
-        duration_ms = tracing::field::Empty,
-        otel.status_code = tracing::field::Empty,
-        error_type = tracing::field::Empty
-    )
-)]
 pub async fn search(args: &SearchArgs) -> Result<SearchOutput, Error> {
-    let span = tracing::Span::current();
-    let started_at = Instant::now();
     let token = session_token()?;
     let client = build_client()?;
     let query = build_query(args);
-    span.record("query", query.as_str());
     let query_params = build_search_query_params(args, &query);
 
     let response = client
@@ -46,91 +30,28 @@ pub async fn search(args: &SearchArgs) -> Result<SearchOutput, Error> {
         )
         .send()
         .await
-        .map_err(|error| {
-            span.record(
-                "duration_ms",
-                started_at.elapsed().as_millis().to_string().as_str(),
-            );
-            span.record("otel.status_code", "ERROR");
-            span.record("error_type", "request");
-            Error::new(format!("Search request failed: {error}"))
-        })?;
+        .map_err(|error| Error::new(format!("Search request failed: {error}")))?;
 
     let status = response.status();
     if status == 401 || status == 403 {
-        span.record(
-            "duration_ms",
-            started_at.elapsed().as_millis().to_string().as_str(),
-        );
-        span.record("otel.status_code", "ERROR");
-        span.record("error_type", "auth");
         return Err(Error::new("invalid or expired session token"));
     }
     if status == 429 {
-        span.record(
-            "duration_ms",
-            started_at.elapsed().as_millis().to_string().as_str(),
-        );
-        span.record("otel.status_code", "ERROR");
-        span.record("error_type", "rate_limit");
         return Err(Error::new("rate limited"));
     }
     if !status.is_success() {
-        span.record(
-            "duration_ms",
-            started_at.elapsed().as_millis().to_string().as_str(),
-        );
-        span.record("otel.status_code", "ERROR");
-        span.record("error_type", "http_status");
         return Err(Error::new(format!("HTTP {status}")));
     }
 
-    let html = response.text().await.map_err(|error| {
-        span.record(
-            "duration_ms",
-            started_at.elapsed().as_millis().to_string().as_str(),
-        );
-        span.record("otel.status_code", "ERROR");
-        span.record("error_type", "response_body");
-        Error::new(format!("Failed to read response: {error}"))
-    })?;
+    let html = response
+        .text()
+        .await
+        .map_err(|error| Error::new(format!("Failed to read response: {error}")))?;
 
-    let output = parse_search_results(&html, args.limit).map_err(|error| {
-        span.record(
-            "duration_ms",
-            started_at.elapsed().as_millis().to_string().as_str(),
-        );
-        span.record("otel.status_code", "ERROR");
-        span.record("error_type", "parse");
-        Error::from(error)
-    })?;
-
-    span.record("result_count", output.results.len().to_string().as_str());
-    span.record("related_count", output.related.len().to_string().as_str());
-    span.record(
-        "duration_ms",
-        started_at.elapsed().as_millis().to_string().as_str(),
-    );
-    span.record("otel.status_code", "OK");
-
-    Ok(output)
+    parse_search_results(&html, args.limit).map_err(Error::from)
 }
 
-#[instrument(
-    skip(args),
-    fields(
-        url = %args.url,
-        summary_type = %args.summary_type.as_api_value(),
-        lang = %args.lang,
-        summary_chars = tracing::field::Empty,
-        duration_ms = tracing::field::Empty,
-        otel.status_code = tracing::field::Empty,
-        error_type = tracing::field::Empty
-    )
-)]
 pub async fn summarize(args: &SummarizeArgs) -> Result<SummarizeOutput, Error> {
-    let span = tracing::Span::current();
-    let started_at = Instant::now();
     let token = session_token()?;
     let client = build_client()?;
 
@@ -150,76 +71,25 @@ pub async fn summarize(args: &SummarizeArgs) -> Result<SummarizeOutput, Error> {
         .header("Referer", "https://kagi.com/summarizer")
         .send()
         .await
-        .map_err(|error| {
-            span.record(
-                "duration_ms",
-                started_at.elapsed().as_millis().to_string().as_str(),
-            );
-            span.record("otel.status_code", "ERROR");
-            span.record("error_type", "request");
-            Error::new(format!("Summarize request failed: {error}"))
-        })?;
+        .map_err(|error| Error::new(format!("Summarize request failed: {error}")))?;
 
     let status = response.status();
     if status == 401 || status == 403 {
-        span.record(
-            "duration_ms",
-            started_at.elapsed().as_millis().to_string().as_str(),
-        );
-        span.record("otel.status_code", "ERROR");
-        span.record("error_type", "auth");
         return Err(Error::new("invalid or expired session token"));
     }
     if status == 429 {
-        span.record(
-            "duration_ms",
-            started_at.elapsed().as_millis().to_string().as_str(),
-        );
-        span.record("otel.status_code", "ERROR");
-        span.record("error_type", "rate_limit");
         return Err(Error::new("rate limited"));
     }
     if !status.is_success() {
-        span.record(
-            "duration_ms",
-            started_at.elapsed().as_millis().to_string().as_str(),
-        );
-        span.record("otel.status_code", "ERROR");
-        span.record("error_type", "http_status");
         return Err(Error::new(format!("HTTP {status}")));
     }
 
-    let body = response.bytes().await.map_err(|error| {
-        span.record(
-            "duration_ms",
-            started_at.elapsed().as_millis().to_string().as_str(),
-        );
-        span.record("otel.status_code", "ERROR");
-        span.record("error_type", "response_body");
-        Error::new(format!("Failed to read response: {error}"))
-    })?;
+    let body = response
+        .bytes()
+        .await
+        .map_err(|error| Error::new(format!("Failed to read response: {error}")))?;
 
-    let output = parse_summary_stream(&body).map_err(|error| {
-        span.record(
-            "duration_ms",
-            started_at.elapsed().as_millis().to_string().as_str(),
-        );
-        span.record("otel.status_code", "ERROR");
-        span.record("error_type", "parse");
-        Error::from(error)
-    })?;
-
-    span.record(
-        "summary_chars",
-        output.summary.chars().count().to_string().as_str(),
-    );
-    span.record(
-        "duration_ms",
-        started_at.elapsed().as_millis().to_string().as_str(),
-    );
-    span.record("otel.status_code", "OK");
-
-    Ok(output)
+    parse_summary_stream(&body).map_err(Error::from)
 }
 
 fn build_client() -> Result<Client, Error> {

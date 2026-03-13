@@ -3,5 +3,5 @@
 Installs binaries to `~/.local/bin` and skills to both `~/.agents/skills` and `~/.claude/skills`.
 
 ```bash
-tmp="$(mktemp -d)" && gh release download "__VERSION__" --repo "rubas/kagi" --pattern 'install.sh' --dir "$tmp" && sh "$tmp/install.sh" "__VERSION__" && rm -rf "$tmp"
+curl -fSL https://github.com/rubas/kagi/releases/download/__VERSION__/install.sh | sh -s __VERSION__
 ```

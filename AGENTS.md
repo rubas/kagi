@@ -12,7 +12,6 @@ Rust CLI repo for `kagi-search` and `kagi-summarize`.
   - search HTML parsing
   - summarize stream parsing
   - timeout handling
-  - telemetry around network calls
 - `task test:live` uses the real Kagi service and requires either:
   - `KAGI_SESSION_TOKEN`
   - or `$XDG_CONFIG_HOME/kagi/session-token`
