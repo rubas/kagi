@@ -50,7 +50,7 @@ jobs:
           fi
 
           current_version="$(sed -n 's/^version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n1)"
-          previous_version="$(git show HEAD^:Cargo.toml 2>/dev/null | sed -n 's/^version = "\([^"]*\)"$/\1/p' | head -n1)"
+          previous_version="$(git show HEAD^:Cargo.toml 2>/dev/null | sed -n 's/^version = "\([^"]*\)"$/\1/p' | head -n1 || true)"
 
           if [ -z "$current_version" ] || [ "$current_version" = "$previous_version" ]; then
             echo "should_release=false" >> "$GITHUB_OUTPUT"
