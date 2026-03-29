@@ -1,0 +1,60 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  claude-review:
+    if: github.event.pull_request.user.login == github.repository_owner
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@0ee1beea589a67d33340072691a5d42abec7ae6b # v1.0.78
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          use_sticky_comment: true
+          direct_prompt: |
+            Review this pull request. Read AGENTS.md first to understand project rules.
+
+            Launch 2 agents in parallel:
+
+            **Agent 1 (opus): Bug and security review**
+            Read AGENTS.md first. Then read the diff and all changed files with surrounding context. Use git blame/history when needed to understand intent.
+
+            Check for:
+            - Logic errors that will produce wrong results
+            - Security issues: injection, auth bypass, data exposure
+            - Breaking changes: removed exports, changed APIs, schema mismatches
+            - Missing imports, type errors, syntax errors
+            - Data integrity: silent data loss, unsafe retries, missing failure handling on critical paths
+
+            Before reporting an issue, re-read the relevant code to confirm it is real. If unsure, skip it.
+
+            **Agent 2 (sonnet): AGENTS.md compliance**
+            Read AGENTS.md first. Check if changes violate any project rules defined there. Only flag violations where you can quote the exact rule broken. If compliant, return nothing.
+
+            **Both agents ignore:** style, formatting, hypothetical edge cases, pre-existing issues not introduced in this PR, anything linters catch.
+
+            **After both return:**
+
+            If no issues: "No issues found."
+
+            For each unique issue:
+            - Brief description
+            - Link: https://github.com/{owner}/{repo}/blob/{full-sha}/path/file.ext#L{start}-L{end}
+            - Small fix: code suggestion. Large fix: describe the fix.
+
+            One comment per issue. No duplicates.

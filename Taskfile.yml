@@ -1,0 +1,120 @@
+version: "3"
+
+tasks:
+  setup:tools:
+    desc: Install cargo-side QA tools
+    cmds:
+      - cargo install cargo-machete cargo-deny
+
+  fmt:
+    desc: Format Rust and repo config files
+    cmds:
+      - cargo fmt
+      - npx dprint fmt
+
+  fmt:check:
+    desc: Check formatting
+    cmds:
+      - cargo fmt --check
+      - npx dprint check
+
+  lint:
+    desc: Run Rust lints
+    cmds:
+      - cargo clippy --all-targets -- -D warnings
+
+  test:
+    desc: Run the test suite
+    cmds:
+      - cargo test
+
+  test:live:
+    desc: Run live integration tests against Kagi using env or XDG token config
+    cmds:
+      - |
+        token_file="${XDG_CONFIG_HOME:-$HOME/.config}/kagi/session-token"
+        if [ -z "${KAGI_SESSION_TOKEN:-}" ] && [ ! -s "$token_file" ]; then
+          echo "task test:live requires KAGI_SESSION_TOKEN or $token_file" >&2
+          exit 1
+        fi
+      - cargo test --test live -- --ignored --nocapture
+
+  test:live:advisory:
+    desc: Run live integration tests but do not fail the task on test errors
+    cmds:
+      - |
+        token_file="${XDG_CONFIG_HOME:-$HOME/.config}/kagi/session-token"
+        if [ -z "${KAGI_SESSION_TOKEN:-}" ] && [ ! -s "$token_file" ]; then
+          echo "no live token source found; skipping advisory live test"
+          exit 0
+        fi
+        if ! cargo test --test live -- --ignored --nocapture; then
+          echo "live integration test reported failures; advisory task returning success"
+        fi
+
+  test:release-check:
+    desc: Verify release-profile compilation
+    cmds:
+      - cargo check --release
+
+  deps:machete:
+    desc: Check for unused dependencies
+    cmds:
+      - cargo machete
+
+  deps:deny:
+    desc: Run dependency policy checks without license enforcement
+    cmds:
+      - cargo deny check advisories bans sources
+
+  check:
+    desc: Run all verification checks
+    cmds:
+      - task fmt:check
+      - task lint
+      - task test
+
+  ci:
+    desc: Full CI entrypoint
+    cmds:
+      - task fmt:check
+      - task lint
+      - task test
+      - task test:release-check
+      - task deps:machete
+      - task deps:deny
+
+  build:
+    desc: Build the release binary
+    cmds:
+      - cargo build --release
+
+  install:
+    desc: Install binaries to ~/.local/bin and skills to ~/.agents/skills and ~/.claude/skills
+    cmds:
+      - cargo build --release
+      - |
+        install_root="${HOME}/.local/bin"
+        agents_root="${HOME}/.agents/skills"
+        claude_root="${HOME}/.claude/skills"
+
+        install -d "${install_root}" "${agents_root}" "${claude_root}"
+
+        rm -rf \
+          "${agents_root}/kagi-search" \
+          "${agents_root}/kagi-summarize" \
+          "${claude_root}/kagi-search" \
+          "${claude_root}/kagi-summarize"
+
+        install -d \
+          "${agents_root}/kagi-search" \
+          "${agents_root}/kagi-summarize" \
+          "${claude_root}/kagi-search" \
+          "${claude_root}/kagi-summarize"
+
+        install -m 755 target/release/kagi-search "${install_root}/kagi-search"
+        install -m 755 target/release/kagi-summarize "${install_root}/kagi-summarize"
+        install -m 644 skills/search/SKILL.md "${agents_root}/kagi-search/SKILL.md"
+        install -m 644 skills/summarize/SKILL.md "${agents_root}/kagi-summarize/SKILL.md"
+        install -m 644 skills/search/SKILL.md "${claude_root}/kagi-search/SKILL.md"
+        install -m 644 skills/summarize/SKILL.md "${claude_root}/kagi-summarize/SKILL.md"
