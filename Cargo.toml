@@ -1,6 +1,6 @@
 [package]
 name = "kagi"
-version = "0.2.0"
+version = "0.2.1"
 categories = ["command-line-utilities"]
 edition = "2024"
 homepage = "https://github.com/rubas/kagi"

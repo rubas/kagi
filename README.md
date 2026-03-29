@@ -16,7 +16,7 @@ Requires a Kagi account with an active session token.
 ### From a GitHub release
 
 ```bash
-curl -fSL https://github.com/rubas/kagi/releases/download/v0.2.0/install.sh | sh -s v0.2.0
+curl -fSL https://github.com/rubas/kagi/releases/download/v0.2.1/install.sh | sh -s v0.2.1
 ```
 
 This installs:
