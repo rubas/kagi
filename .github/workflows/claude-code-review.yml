@@ -6,12 +6,11 @@ on:
 
 jobs:
   claude-review:
-    if: github.event.pull_request.user.login == github.repository_owner
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: read
-      issues: read
+      pull-requests: write
+      issues: write
       id-token: write
 
     steps:
@@ -22,39 +21,36 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@0ee1beea589a67d33340072691a5d42abec7ae6b # v1.0.78
+        uses: anthropics/claude-code-action@2cc1ac1331eac7a6a96d716dd204dd2888d0fcd2 # v1.0.112
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          use_sticky_comment: true
-          direct_prompt: |
+          track_progress: true
+
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
             Review this pull request. Read AGENTS.md first to understand project rules.
+            The PR branch is already checked out in the current working directory.
 
-            Launch 2 agents in parallel:
+            Read the diff and the changed files with surrounding context. Use git blame/history when intent is unclear.
 
-            **Agent 1 (opus): Bug and security review**
-            Read AGENTS.md first. Then read the diff and all changed files with surrounding context. Use git blame/history when needed to understand intent.
-
-            Check for:
-            - Logic errors that will produce wrong results
-            - Security issues: injection, auth bypass, data exposure
+            Flag only issues introduced by this PR in these categories:
+            - Logic errors that produce wrong results
+            - Security: injection, auth bypass, data exposure
             - Breaking changes: removed exports, changed APIs, schema mismatches
             - Missing imports, type errors, syntax errors
             - Data integrity: silent data loss, unsafe retries, missing failure handling on critical paths
+            - Violations of rules in AGENTS.md (quote the exact rule)
+
+            Ignore: style, formatting, hypothetical edge cases, pre-existing issues, anything a linter catches.
 
             Before reporting an issue, re-read the relevant code to confirm it is real. If unsure, skip it.
 
-            **Agent 2 (sonnet): AGENTS.md compliance**
-            Read AGENTS.md first. Check if changes violate any project rules defined there. Only flag violations where you can quote the exact rule broken. If compliant, return nothing.
+            Posting:
+            - Use `mcp__github_inline_comment__create_inline_comment` (with `confirmed: true`) for each issue, anchored to the offending line.
+            - If there are no issues, post a single top-level comment via `gh pr comment $PR_NUMBER --body "No issues found."`.
+            - Do not submit review text as your final message - only post GitHub comments.
 
-            **Both agents ignore:** style, formatting, hypothetical edge cases, pre-existing issues not introduced in this PR, anything linters catch.
-
-            **After both return:**
-
-            If no issues: "No issues found."
-
-            For each unique issue:
-            - Brief description
-            - Link: https://github.com/{owner}/{repo}/blob/{full-sha}/path/file.ext#L{start}-L{end}
-            - Small fix: code suggestion. Large fix: describe the fix.
-
-            One comment per issue. No duplicates.
+          claude_args: |
+            --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*)"
