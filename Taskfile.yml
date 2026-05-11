@@ -57,6 +57,11 @@ tasks:
     cmds:
       - cargo check --release
 
+  test:nix:
+    desc: Build the default Nix package
+    cmds:
+      - nix build .# --no-link
+
   deps:machete:
     desc: Check for unused dependencies
     cmds:
@@ -81,6 +86,7 @@ tasks:
       - task lint
       - task test
       - task test:release-check
+      - task test:nix
       - task deps:machete
       - task deps:deny
 

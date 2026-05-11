@@ -33,6 +33,40 @@ Supported platforms: Linux x86_64 and macOS aarch64.
 cargo install --git https://github.com/rubas/kagi.git
 ```
 
+For local development with the required native build tools:
+
+```bash
+nix develop
+task ci
+```
+
+### With Nix flakes
+
+Install the CLIs directly:
+
+```bash
+nix profile install github:rubas/kagi
+```
+
+Or enable the Home Manager module to install the CLIs and companion skills:
+
+```nix
+{
+  inputs.kagi.url = "github:rubas/kagi";
+
+  outputs = { kagi, ... }: {
+    homeConfigurations.example = home-manager.lib.homeManagerConfiguration {
+      modules = [
+        kagi.homeManagerModules.default
+        {
+          programs.kagi.enable = true;
+        }
+      ];
+    };
+  };
+}
+```
+
 ## Authentication
 
 You need a Kagi session token. The binaries check these sources in order:
