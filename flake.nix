@@ -1,5 +1,5 @@
 {
-  description = "Unix-style CLI tools for Kagi search and URL summarization";
+  description = "Unix-style CLI tools for Kagi search, maps, and URL summarization";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
@@ -19,7 +19,7 @@
         pkgs:
         pkgs.rustPlatform.buildRustPackage {
           pname = "kagi";
-          version = "0.2.1";
+          version = "0.3.0";
 
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
@@ -35,6 +35,7 @@
 
           postInstall = ''
             install -Dm644 skills/search/SKILL.md "$out/share/kagi/skills/kagi-search/SKILL.md"
+            install -Dm644 skills/maps/SKILL.md "$out/share/kagi/skills/kagi-maps/SKILL.md"
             install -Dm644 skills/summarize/SKILL.md "$out/share/kagi/skills/kagi-summarize/SKILL.md"
           '';
         };
@@ -105,6 +106,7 @@
           package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
           skillNames = [
             "kagi-search"
+            "kagi-maps"
             "kagi-summarize"
           ];
 
@@ -119,7 +121,7 @@
         in
         {
           options.programs.kagi = {
-            enable = lib.mkEnableOption "Kagi search and summarization CLIs and skills";
+            enable = lib.mkEnableOption "Kagi search, maps, and summarization CLIs and skills";
 
             package = lib.mkOption {
               type = lib.types.package;
@@ -131,9 +133,7 @@
           config = lib.mkIf cfg.enable {
             home.packages = [ cfg.package ];
 
-            home.file =
-              mkSkillFiles ".agents/skills"
-              // mkSkillFiles ".claude/skills";
+            home.file = mkSkillFiles ".agents/skills" // mkSkillFiles ".claude/skills";
           };
         };
     };

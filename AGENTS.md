@@ -1,6 +1,6 @@
 # kagi - Project Rules
 
-Rust CLI repo for `kagi-search` and `kagi-summarize`.
+Rust CLI repo for `kagi-search`, `kagi-maps`, and `kagi-summarize`.
 
 ## Testing
 
@@ -9,7 +9,9 @@ Rust CLI repo for `kagi-search` and `kagi-summarize`.
   - token resolution
   - HTTP client behavior
   - Kagi request parameters
+  - maps request parameters
   - search HTML parsing
+  - maps JSON parsing
   - summarize stream parsing
   - timeout handling
 - `task test:live` uses the real Kagi service and requires either:
@@ -26,7 +28,7 @@ Rust CLI repo for `kagi-search` and `kagi-summarize`.
 
 ## CLI Contract
 
-- Keep `kagi-search` and `kagi-summarize` separate.
+- Keep `kagi-search`, `kagi-maps`, and `kagi-summarize` separate.
 - Do not reintroduce a combined multi-purpose command.
 
 ## Release Flow

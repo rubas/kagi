@@ -2,14 +2,18 @@ use std::ffi::OsString;
 use std::path::PathBuf;
 use std::time::Duration;
 
-use rquest::Client;
-use rquest_util::Emulation;
+use wreq::Client;
+use wreq_util::Emulation;
 
-use crate::cli::{SearchArgs, SummarizeArgs};
+use crate::cli::{MapsArgs, MapsOrder, MapsSort, SearchArgs, SummarizeArgs};
 use crate::error::Error;
-use crate::parse::{SearchOutput, SummarizeOutput, parse_search_results, parse_summary_stream};
+use crate::parse::{
+    MapsOutput, MapsResult, SearchOutput, SummarizeOutput, parse_maps_results,
+    parse_search_results, parse_summary_stream,
+};
 
 const SEARCH_URL: &str = "https://kagi.com/html/search";
+const MAPS_SEARCH_URL: &str = "https://kagi.com/maps/api/v1/search";
 const SUMMARIZE_URL: &str = "https://kagi.com/mother/summary_labs";
 const SESSION_TOKEN_ENV: &str = "KAGI_SESSION_TOKEN";
 const XDG_CONFIG_ENV: &str = "XDG_CONFIG_HOME";
@@ -92,11 +96,51 @@ pub async fn summarize(args: &SummarizeArgs) -> Result<SummarizeOutput, Error> {
     parse_summary_stream(&body).map_err(Error::from)
 }
 
+pub async fn maps(args: &MapsArgs) -> Result<MapsOutput, Error> {
+    let token = session_token()?;
+    let client = build_client()?;
+    let query = args.query.join(" ");
+    let query_params = build_maps_query_params(args, &query);
+
+    let response = client
+        .get(MAPS_SEARCH_URL)
+        .query(&query_params)
+        .header(
+            "Cookie",
+            format!("kagi_session={}", token.to_string_lossy()),
+        )
+        .header("Referer", "https://kagi.com/maps")
+        .send()
+        .await
+        .map_err(|error| Error::new(format!("Maps request failed: {error}")))?;
+
+    let status = response.status();
+    if status == 401 || status == 403 {
+        return Err(Error::new("invalid or expired session token"));
+    }
+    if status == 429 {
+        return Err(Error::new("rate limited"));
+    }
+    if !status.is_success() {
+        return Err(Error::new(format!("HTTP {status}")));
+    }
+
+    let body = response
+        .bytes()
+        .await
+        .map_err(|error| Error::new(format!("Failed to read response: {error}")))?;
+    let mut output = parse_maps_results(&body, usize::MAX).map_err(Error::from)?;
+    sort_maps_results(&mut output.results, args.sort, args.order);
+    output.results.truncate(args.limit);
+
+    Ok(output)
+}
+
 fn build_client() -> Result<Client, Error> {
     Client::builder()
         .emulation(Emulation::Chrome131)
         .cookie_store(true)
-        .redirect(rquest::redirect::Policy::limited(10))
+        .redirect(wreq::redirect::Policy::limited(10))
         .timeout(Duration::from_secs(30))
         .build()
         .map_err(|error| Error::new(format!("Failed to build HTTP client: {error}")))
@@ -191,4 +235,68 @@ fn build_search_query_params(args: &SearchArgs, query: &str) -> Vec<(&'static st
     }
 
     params
+}
+
+fn build_maps_query_params(args: &MapsArgs, query: &str) -> Vec<(&'static str, String)> {
+    let mut params = vec![("q", query.to_string())];
+
+    if let Some(ll) = &args.ll {
+        params.push(("ll", ll.clone()));
+    }
+    if let Some(bbox) = &args.bbox {
+        params.push(("bbox", bbox.clone()));
+    }
+    if let Some(zoom) = args.zoom {
+        params.push(("z", zoom.to_string()));
+    }
+
+    params
+}
+
+fn sort_maps_results(results: &mut [MapsResult], sort: Option<MapsSort>, order: Option<MapsOrder>) {
+    let Some(sort) = sort else {
+        return;
+    };
+
+    let multiplier = match order.unwrap_or(default_maps_order(sort)) {
+        MapsOrder::Asc => 1.0,
+        MapsOrder::Desc => -1.0,
+    };
+
+    match sort {
+        MapsSort::Relevance => {}
+        MapsSort::Rating => results
+            .sort_by(|left, right| compare_optional_f64(left.rating, right.rating, multiplier)),
+        MapsSort::Distance => results
+            .sort_by(|left, right| compare_optional_f64(left.distance, right.distance, multiplier)),
+        MapsSort::Price => results.sort_by(|left, right| {
+            compare_optional_f64(
+                left.price.as_ref().map(|price| price.len() as f64),
+                right.price.as_ref().map(|price| price.len() as f64),
+                multiplier,
+            )
+        }),
+    }
+}
+
+fn default_maps_order(sort: MapsSort) -> MapsOrder {
+    match sort {
+        MapsSort::Relevance | MapsSort::Rating => MapsOrder::Desc,
+        MapsSort::Distance | MapsSort::Price => MapsOrder::Asc,
+    }
+}
+
+fn compare_optional_f64(
+    left: Option<f64>,
+    right: Option<f64>,
+    multiplier: f64,
+) -> std::cmp::Ordering {
+    match (left, right) {
+        (Some(left), Some(right)) => (left * multiplier)
+            .partial_cmp(&(right * multiplier))
+            .unwrap_or(std::cmp::Ordering::Equal),
+        (Some(_), None) => std::cmp::Ordering::Less,
+        (None, Some(_)) => std::cmp::Ordering::Greater,
+        (None, None) => std::cmp::Ordering::Equal,
+    }
 }

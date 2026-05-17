@@ -1,0 +1,47 @@
+{
+  "params": {
+    "q": "coffee zurich",
+    "ll": "47.3769,8.5417",
+    "z": "13"
+  },
+  "pois": [
+    {
+      "name": "Example Coffee",
+      "address": "Example Street 1",
+      "coordinates": {
+        "latitude": 47.3726576,
+        "longitude": 8.5262939
+      },
+      "country": "Switzerland",
+      "entityLevel": "poi",
+      "hours_now": "Open",
+      "id": "source-id",
+      "id_k": "kagi-id",
+      "images": [
+        {
+          "url": "https://example.com/image.jpg"
+        }
+      ],
+      "links": {
+        "website": "https://example.com"
+      },
+      "phone": "+41 44 000 00 00",
+      "price": "$$",
+      "rating": 4.7,
+      "reviewCount": 477,
+      "source": "searchapiio",
+      "types": [
+        "cafe"
+      ],
+      "url": "https://example.com"
+    },
+    {
+      "name": "Second Coffee",
+      "address": "Example Street 2",
+      "coordinates": {
+        "latitude": 47.37,
+        "longitude": 8.52
+      }
+    }
+  ]
+}

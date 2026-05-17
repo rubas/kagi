@@ -1,5 +1,6 @@
 use scraper::{Html, Selector};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct SearchResult {
@@ -17,6 +18,63 @@ pub struct SearchOutput {
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct SummarizeOutput {
     pub summary: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MapsCoordinates {
+    pub latitude: f64,
+    pub longitude: f64,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MapsResult {
+    pub name: String,
+    pub address: Option<String>,
+    pub coordinates: MapsCoordinates,
+    pub phone: Option<String>,
+    pub url: Option<String>,
+    pub source: Option<String>,
+    pub id: Option<String>,
+    pub rating: Option<f64>,
+    #[serde(rename = "reviewCount")]
+    pub review_count: Option<u64>,
+    pub price: Option<String>,
+    pub distance: Option<f64>,
+    pub hours_now: Option<String>,
+    pub types: Option<Vec<String>>,
+    pub links: Option<Value>,
+    pub images: Option<Value>,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize)]
+pub struct MapsOutput {
+    pub results: Vec<MapsResult>,
+}
+
+#[derive(Debug, Deserialize)]
+struct MapsApiResponse {
+    pois: Vec<MapsApiPoi>,
+}
+
+#[derive(Debug, Deserialize)]
+struct MapsApiPoi {
+    name: String,
+    address: Option<String>,
+    coordinates: MapsCoordinates,
+    phone: Option<String>,
+    url: Option<String>,
+    source: Option<String>,
+    id: Option<String>,
+    id_k: Option<String>,
+    rating: Option<f64>,
+    #[serde(rename = "reviewCount")]
+    review_count: Option<u64>,
+    price: Option<String>,
+    distance: Option<f64>,
+    hours_now: Option<String>,
+    types: Option<Vec<String>>,
+    links: Option<Value>,
+    images: Option<Value>,
 }
 
 pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, String> {
@@ -127,6 +185,36 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
     results.truncate(limit);
 
     Ok(SearchOutput { results, related })
+}
+
+pub fn parse_maps_results(body: &[u8], limit: usize) -> Result<MapsOutput, String> {
+    let response: MapsApiResponse = serde_json::from_slice(body)
+        .map_err(|error| format!("Failed to parse maps JSON: {error}"))?;
+
+    let results = response
+        .pois
+        .into_iter()
+        .take(limit)
+        .map(|poi| MapsResult {
+            name: poi.name,
+            address: poi.address,
+            coordinates: poi.coordinates,
+            phone: poi.phone,
+            url: poi.url,
+            source: poi.source,
+            id: poi.id_k.or(poi.id),
+            rating: poi.rating,
+            review_count: poi.review_count,
+            price: poi.price,
+            distance: poi.distance,
+            hours_now: poi.hours_now,
+            types: poi.types,
+            links: poi.links,
+            images: poi.images,
+        })
+        .collect();
+
+    Ok(MapsOutput { results })
 }
 
 pub fn parse_summary_stream(body: &[u8]) -> Result<SummarizeOutput, String> {

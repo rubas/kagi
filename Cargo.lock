@@ -99,9 +99,9 @@ dependencies = [
 
 [[package]]
 name = "assert_cmd"
-version = "2.2.1"
+version = "2.2.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "39bae1d3fa576f7c6519514180a72559268dd7d1fe104070956cb687bc6673bd"
+checksum = "2aa3a22042e45de04255c7bf3626e239f450200fd0493c1e382263544b20aea6"
 dependencies = [
  "anstyle",
  "bstr",
@@ -403,9 +403,9 @@ dependencies = [
 
 [[package]]
 name = "cssparser"
-version = "0.36.0"
+version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dae61cf9c0abb83bd659dab65b7e4e38d8236824c85f0f804f173567bda257d2"
+checksum = "8c9cdaae01d5ed7882b04d795e7f752f46ff52d2fa3b50a20d28c464510bba98"
 dependencies = [
  "cssparser-macros",
  "dtoa-short",
@@ -416,9 +416,9 @@ dependencies = [
 
 [[package]]
 name = "cssparser-macros"
-version = "0.6.1"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "13b588ba4ac1a99f7f2964d24b3d896ddc6bf847ee3855dbd4366f058cfcd331"
+checksum = "10a2a99df6e410a8ff4245aa2006499ea662245f967cc7c0a38c83ef8eb44dbf"
 dependencies = [
  "quote",
  "syn",
@@ -938,17 +938,17 @@ dependencies = [
 
 [[package]]
 name = "kagi"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "assert_cmd",
  "clap",
  "predicates",
- "rquest",
- "rquest-util",
  "scraper",
  "serde",
  "serde_json",
  "tokio",
+ "wreq",
+ "wreq-util",
 ]
 
 [[package]]
@@ -1349,60 +1349,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc897dd8d9e8bd1ed8cdad82b5966c3e0ecae09fb1907d58efaa013543185d0a"
 
 [[package]]
-name = "rquest"
-version = "5.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "821ab2b3866cc43b553364566edf7387aea98b28b87213d8a889fc2504b3b8b0"
-dependencies = [
- "antidote",
- "arc-swap",
- "async-compression",
- "base64",
- "boring2",
- "bytes",
- "cookie",
- "cookie_store",
- "encoding_rs",
- "futures-util",
- "http",
- "http-body",
- "http-body-util",
- "hyper2",
- "ipnet",
- "linked_hash_set",
- "log",
- "lru",
- "mime",
- "percent-encoding",
- "pin-project-lite",
- "serde",
- "serde_json",
- "serde_urlencoded",
- "socket2 0.5.10",
- "sync_wrapper",
- "system-configuration",
- "tokio",
- "tokio-boring2",
- "tokio-util",
- "tower",
- "tower-service",
- "typed-builder",
- "url",
- "webpki-root-certs 0.26.11",
- "windows-registry",
-]
-
-[[package]]
-name = "rquest-util"
-version = "2.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d3e3762f6e3e0d1674a6e74ebcbcb3b8d56c895757fc2cc2aa0d5e62ccfcb21e"
-dependencies = [
- "rquest",
- "typed-builder",
-]
-
-[[package]]
 name = "rustc-hash"
 version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1456,9 +1402,9 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "scraper"
-version = "0.26.0"
+version = "0.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f0f5297102b8b62b4454ee8561601b2d551b4913148feb4241ca9d1a04bf4526"
+checksum = "bdd0be4d296f048bfb06dd01bbc80ef789ddd2e55583e8d2e6b804942abfabc2"
 dependencies = [
  "cssparser",
  "ego-tree",
@@ -1471,9 +1417,9 @@ dependencies = [
 
 [[package]]
 name = "selectors"
-version = "0.36.1"
+version = "0.38.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c5d9c0c92a92d33f08817311cf3f2c29a3538a8240e94a6a3c622ce652d7e00c"
+checksum = "8adfa1c298912827b8a28b223b3b874357397ae706e6190acd9bf28cee99114d"
 dependencies = [
  "bitflags",
  "cssparser",
@@ -2127,6 +2073,60 @@ name = "wit-bindgen"
 version = "0.57.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1ebf944e87a7c253233ad6766e082e3cd714b5d03812acc24c318f549614536e"
+
+[[package]]
+name = "wreq"
+version = "5.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "137ed11c4c418fb3dc41db7323ebc49aa9b6fe6a24ce152e6b2de9d6fadd9c8f"
+dependencies = [
+ "antidote",
+ "arc-swap",
+ "async-compression",
+ "base64",
+ "boring2",
+ "bytes",
+ "cookie",
+ "cookie_store",
+ "encoding_rs",
+ "futures-util",
+ "http",
+ "http-body",
+ "http-body-util",
+ "hyper2",
+ "ipnet",
+ "linked_hash_set",
+ "log",
+ "lru",
+ "mime",
+ "percent-encoding",
+ "pin-project-lite",
+ "serde",
+ "serde_json",
+ "serde_urlencoded",
+ "socket2 0.5.10",
+ "sync_wrapper",
+ "system-configuration",
+ "tokio",
+ "tokio-boring2",
+ "tokio-util",
+ "tower",
+ "tower-service",
+ "typed-builder",
+ "url",
+ "webpki-root-certs 0.26.11",
+ "windows-registry",
+]
+
+[[package]]
+name = "wreq-util"
+version = "2.2.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b28b3585973a8923c32c2f916e60b7b0d1cb4dd53e8cb2d7422c0ac001ef2487"
+dependencies = [
+ "typed-builder",
+ "wreq",
+]
 
 [[package]]
 name = "writeable"

@@ -1,4 +1,8 @@
-use kagi::{parse_search_results, parse_summary_stream};
+//! Fixture-level parser tests for Kagi search HTML, maps JSON, and summarizer streams.
+//!
+//! These tests cover local parsing contracts only. They do not perform live Kagi requests.
+
+use kagi::{parse_maps_results, parse_search_results, parse_summary_stream};
 
 #[test]
 fn parses_standard_results_fixture() {
@@ -35,6 +39,25 @@ fn detects_captcha_fixture() {
     let html = include_str!("fixtures/search/captcha.html");
     let error = parse_search_results(html, 10).unwrap_err();
     assert!(error.contains("CAPTCHA"));
+}
+
+#[test]
+fn parses_maps_results_fixture() {
+    let body = include_bytes!("fixtures/maps/search.json");
+    let output = parse_maps_results(body, 1).unwrap();
+
+    assert_eq!(output.results.len(), 1);
+    assert_eq!(output.results[0].name, "Example Coffee");
+    assert_eq!(
+        output.results[0].address.as_deref(),
+        Some("Example Street 1")
+    );
+    assert_eq!(output.results[0].coordinates.latitude, 47.3726576);
+    assert_eq!(output.results[0].coordinates.longitude, 8.5262939);
+    assert_eq!(output.results[0].phone.as_deref(), Some("+41 44 000 00 00"));
+    assert_eq!(output.results[0].rating, Some(4.7));
+    assert_eq!(output.results[0].review_count, Some(477));
+    assert_eq!(output.results[0].price.as_deref(), Some("$$"));
 }
 
 #[test]

@@ -5,6 +5,7 @@ Unofficial Unix-style CLI tools for [Kagi Search](https://kagi.com). Not affilia
 Each binary does one job:
 
 - `kagi-search` finds sources
+- `kagi-maps` finds places and addresses
 - `kagi-summarize` summarizes one explicit URL
 
 Output is plain text by default and compact JSON with `--json`, so it works well for terminal use and agentic pipelines.
@@ -16,14 +17,14 @@ Requires a Kagi account with an active session token.
 ### From a GitHub release
 
 ```bash
-curl -fSL https://github.com/rubas/kagi/releases/download/v0.2.1/install.sh | sh -s v0.2.1
+curl -fSL https://github.com/rubas/kagi/releases/download/v0.3.0/install.sh | sh -s v0.3.0
 ```
 
 This installs:
 
-- `kagi-search` and `kagi-summarize` to `~/.local/bin`
-- skills to `~/.agents/skills/kagi-search`, `~/.agents/skills/kagi-summarize`
-- skills to `~/.claude/skills/kagi-search`, `~/.claude/skills/kagi-summarize`
+- `kagi-search`, `kagi-maps`, and `kagi-summarize` to `~/.local/bin`
+- skills to `~/.agents/skills/kagi-search`, `~/.agents/skills/kagi-maps`, `~/.agents/skills/kagi-summarize`
+- skills to `~/.claude/skills/kagi-search`, `~/.claude/skills/kagi-maps`, `~/.claude/skills/kagi-summarize`
 
 Supported platforms: Linux x86_64 and macOS aarch64.
 
@@ -114,6 +115,36 @@ kagi-search 'SBB Fahrplan' --region ch --sort recency --time week
 kagi-search 'memory leak' --site github.com --filetype rs --json
 ```
 
+### `kagi-maps`
+
+Search Kagi Maps for places, businesses, points of interest, and addresses.
+
+Usage:
+
+```bash
+kagi-maps [OPTIONS] <QUERY>...
+```
+
+Options:
+
+- `--limit <N>`: maximum results, default `10`
+- `--ll <LAT,LON>`: search origin coordinate, such as `47.3769,8.5417`
+- `--bbox <WEST,SOUTH,EAST,NORTH>`: map bounding box
+- `--zoom <N>`: map zoom level passed to Kagi Maps as `z`
+- `--sort <SORT>`: `relevance`, `rating`, `distance`, `price`
+- `--order <ORDER>`: `asc`, `desc`
+- `--output <text|json>`: explicit output mode
+- `-j, --json`: shortcut for JSON output
+- `-h, --help`: print help
+- `-V, --version`: print version
+
+Examples:
+
+```bash
+kagi-maps 'coffee zurich' --ll 47.3769,8.5417 --zoom 13
+kagi-maps 'bookstore near bern' --sort rating --json
+```
+
 ### `kagi-summarize`
 
 Summarize one explicit URL with Kagi.
@@ -148,6 +179,11 @@ kagi-summarize 'https://www.rust-lang.org/learn' --lang DE --json
 - text: numbered results plus optional `Related:` terms
 - json: `{ "results": [...], "related": [...] }`
 
+`kagi-maps` returns:
+
+- text: numbered places with address, coordinates, rating, phone, and URL when present
+- json: `{ "results": [...] }`
+
 `kagi-summarize` returns:
 
 - text: raw markdown summary
@@ -158,6 +194,7 @@ kagi-summarize 'https://www.rust-lang.org/learn' --lang DE --json
 This repo ships companion skills for Claude Code and other agents:
 
 - [`skills/search/SKILL.md`](skills/search/SKILL.md)
+- [`skills/maps/SKILL.md`](skills/maps/SKILL.md)
 - [`skills/summarize/SKILL.md`](skills/summarize/SKILL.md)
 
 ## License

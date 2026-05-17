@@ -50,23 +50,30 @@ install -d "$bin_dir" "$agents_root" "$claude_root"
 
 rm -rf \
   "${agents_root}/kagi-search" \
+  "${agents_root}/kagi-maps" \
   "${agents_root}/kagi-summarize" \
   "${claude_root}/kagi-search" \
+  "${claude_root}/kagi-maps" \
   "${claude_root}/kagi-summarize"
 
 install -d \
   "${agents_root}/kagi-search" \
+  "${agents_root}/kagi-maps" \
   "${agents_root}/kagi-summarize" \
   "${claude_root}/kagi-search" \
+  "${claude_root}/kagi-maps" \
   "${claude_root}/kagi-summarize"
 
 install -m 755 "$tmp/$root/bin/kagi-search" "${bin_dir}/kagi-search"
+install -m 755 "$tmp/$root/bin/kagi-maps" "${bin_dir}/kagi-maps"
 install -m 755 "$tmp/$root/bin/kagi-summarize" "${bin_dir}/kagi-summarize"
 
 install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "${agents_root}/kagi-search/SKILL.md"
+install -m 644 "$tmp/kagi-skills/kagi-maps/SKILL.md" "${agents_root}/kagi-maps/SKILL.md"
 install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "${agents_root}/kagi-summarize/SKILL.md"
 install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "${claude_root}/kagi-search/SKILL.md"
+install -m 644 "$tmp/kagi-skills/kagi-maps/SKILL.md" "${claude_root}/kagi-maps/SKILL.md"
 install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "${claude_root}/kagi-summarize/SKILL.md"
 
-echo "installed kagi-search and kagi-summarize to ${bin_dir}"
+echo "installed kagi-search, kagi-maps and kagi-summarize to ${bin_dir}"
 echo "installed skills to ${agents_root} and ${claude_root}"

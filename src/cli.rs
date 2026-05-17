@@ -87,6 +87,20 @@ impl SummaryType {
     }
 }
 
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum MapsSort {
+    Relevance,
+    Rating,
+    Distance,
+    Price,
+}
+
+#[derive(Debug, Clone, Copy, ValueEnum)]
+pub enum MapsOrder {
+    Asc,
+    Desc,
+}
+
 #[derive(Debug, Clone, Parser)]
 #[command(
     name = "kagi-search",
@@ -136,6 +150,7 @@ pub struct SearchArgs {
 }
 
 impl SearchArgs {
+    /// Returns the effective output format after applying shortcut flags.
     pub fn resolved_output(&self) -> OutputFormat {
         if self.json {
             OutputFormat::Json
@@ -170,6 +185,54 @@ pub struct SummarizeArgs {
 }
 
 impl SummarizeArgs {
+    /// Returns the effective output format after applying shortcut flags.
+    pub fn resolved_output(&self) -> OutputFormat {
+        if self.json {
+            OutputFormat::Json
+        } else {
+            self.output
+        }
+    }
+}
+
+#[derive(Debug, Clone, Parser)]
+#[command(
+    name = "kagi-maps",
+    version,
+    about = "Search Kagi Maps for places and addresses",
+    arg_required_else_help = true
+)]
+pub struct MapsArgs {
+    #[arg(value_name = "QUERY", num_args = 1.., required = true)]
+    pub query: Vec<String>,
+
+    #[arg(long, default_value_t = 10)]
+    pub limit: usize,
+
+    #[arg(long, value_name = "LAT,LON", value_parser = coordinate_parser())]
+    pub ll: Option<String>,
+
+    #[arg(long, value_name = "WEST,SOUTH,EAST,NORTH", value_parser = bbox_parser())]
+    pub bbox: Option<String>,
+
+    #[arg(long = "zoom", value_name = "N")]
+    pub zoom: Option<f64>,
+
+    #[arg(long, value_enum)]
+    pub sort: Option<MapsSort>,
+
+    #[arg(long, value_enum)]
+    pub order: Option<MapsOrder>,
+
+    #[arg(long, value_enum, default_value_t = OutputFormat::Text)]
+    pub output: OutputFormat,
+
+    #[arg(long, short = 'j')]
+    pub json: bool,
+}
+
+impl MapsArgs {
+    /// Returns the effective output format after applying shortcut flags.
     pub fn resolved_output(&self) -> OutputFormat {
         if self.json {
             OutputFormat::Json
@@ -197,6 +260,24 @@ pub async fn run_search_cli(args: impl IntoIterator<Item = OsString>) -> Result<
     output::print_search(&output, args.resolved_output())
 }
 
+pub async fn run_maps_cli(args: impl IntoIterator<Item = OsString>) -> Result<(), Error> {
+    let args = match MapsArgs::try_parse_from(args) {
+        Ok(args) => args,
+        Err(error) => match error.kind() {
+            clap::error::ErrorKind::DisplayHelp | clap::error::ErrorKind::DisplayVersion => {
+                error
+                    .print()
+                    .map_err(|print_error| Error::new(print_error.to_string()))?;
+                return Ok(());
+            }
+            _ => return Err(Error::new(error.to_string())),
+        },
+    };
+
+    let output = client::maps(&args).await?;
+    output::print_maps(&output, args.resolved_output())
+}
+
 pub async fn run_summarize_cli(args: impl IntoIterator<Item = OsString>) -> Result<(), Error> {
     let args = match SummarizeArgs::try_parse_from(args) {
         Ok(args) => args,
@@ -213,6 +294,77 @@ pub async fn run_summarize_cli(args: impl IntoIterator<Item = OsString>) -> Resu
 
     let output = client::summarize(&args).await?;
     output::print_summary(&output, args.resolved_output())
+}
+
+fn coordinate_parser() -> impl TypedValueParser<Value = String> {
+    clap::builder::StringValueParser::new().try_map(|value| {
+        let parts = parse_number_list(&value, 2, "coordinate", "LAT,LON")?;
+        let lat = parts[0];
+        let lon = parts[1];
+
+        if (-90.0..=90.0).contains(&lat) && (-180.0..=180.0).contains(&lon) {
+            Ok(value)
+        } else {
+            Err(format!(
+                "invalid coordinate '{value}', expected LAT,LON within latitude -90..90 and longitude -180..180"
+            ))
+        }
+    })
+}
+
+fn bbox_parser() -> impl TypedValueParser<Value = String> {
+    clap::builder::StringValueParser::new().try_map(|value| {
+        let parts = parse_number_list(&value, 4, "bounding box", "WEST,SOUTH,EAST,NORTH")?;
+        let west = parts[0];
+        let south = parts[1];
+        let east = parts[2];
+        let north = parts[3];
+
+        if !((-180.0..=180.0).contains(&west) && (-180.0..=180.0).contains(&east)) {
+            return Err(format!(
+                "invalid bounding box '{value}', longitude values must be within -180..180"
+            ));
+        }
+        if !((-90.0..=90.0).contains(&south) && (-90.0..=90.0).contains(&north)) {
+            return Err(format!(
+                "invalid bounding box '{value}', latitude values must be within -90..90"
+            ));
+        }
+        // west == east is degenerate; west > east is allowed for boxes crossing the antimeridian.
+        if west == east {
+            return Err(format!(
+                "invalid bounding box '{value}', WEST and EAST must differ"
+            ));
+        }
+        if south >= north {
+            return Err(format!(
+                "invalid bounding box '{value}', expected SOUTH < NORTH"
+            ));
+        }
+
+        Ok(value)
+    })
+}
+
+fn parse_number_list(
+    value: &str,
+    expected_len: usize,
+    label: &str,
+    expected_format: &str,
+) -> Result<Vec<f64>, String> {
+    let parts = value
+        .split(',')
+        .map(|part| part.trim().parse::<f64>())
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|_| format!("invalid {label} '{value}', expected {expected_format}"))?;
+
+    if parts.len() == expected_len {
+        Ok(parts)
+    } else {
+        Err(format!(
+            "invalid {label} '{value}', expected {expected_format}"
+        ))
+    }
 }
 
 fn date_parser() -> impl TypedValueParser<Value = String> {
