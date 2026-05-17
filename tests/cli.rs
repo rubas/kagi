@@ -10,6 +10,10 @@ fn summarize_bin() -> Command {
     Command::new(assert_cmd::cargo::cargo_bin!("kagi-summarize"))
 }
 
+fn maps_bin() -> Command {
+    Command::new(assert_cmd::cargo::cargo_bin!("kagi-maps"))
+}
+
 #[test]
 fn search_help_lists_search_flags() {
     search_bin()
@@ -77,4 +81,85 @@ fn summarize_help_lists_summary_flags() {
         .stdout(predicate::str::contains("--type"))
         .stdout(predicate::str::contains("--lang"))
         .stdout(predicate::str::contains("URL"));
+}
+
+#[test]
+fn maps_help_lists_maps_flags() {
+    maps_bin()
+        .arg("--help")
+        .assert()
+        .success()
+        .stdout(predicate::str::contains("--ll"))
+        .stdout(predicate::str::contains("--bbox"))
+        .stdout(predicate::str::contains("--zoom"))
+        .stdout(predicate::str::contains("QUERY"));
+}
+
+#[test]
+fn maps_rejects_invalid_coordinates() {
+    maps_bin()
+        .args(["coffee", "--ll", "100,8"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("expected LAT,LON"));
+}
+
+#[test]
+fn maps_accepts_antimeridian_bbox() {
+    // Box around Fiji crossing the 180° meridian: west=170, east=-170.
+    // Must reach the session-token check, not bounce off bbox validation.
+    let temp_home = std::env::temp_dir().join(format!(
+        "kagi-maps-antimeridian-{}",
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(&temp_home).unwrap();
+
+    maps_bin()
+        .env_remove("KAGI_SESSION_TOKEN")
+        .env("XDG_CONFIG_HOME", temp_home.join("xdg-config"))
+        .args(["coffee", "--bbox", "170,-10,-170,10"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("missing session token"));
+}
+
+#[test]
+fn maps_rejects_degenerate_bbox() {
+    maps_bin()
+        .args(["coffee", "--bbox", "10,0,10,5"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("WEST and EAST must differ"));
+}
+
+#[test]
+fn maps_rejects_inverted_latitude_bbox() {
+    maps_bin()
+        .args(["coffee", "--bbox", "0,10,5,5"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("SOUTH < NORTH"));
+}
+
+#[test]
+fn maps_requires_session_token_before_network() {
+    let temp_home = std::env::temp_dir().join(format!(
+        "kagi-maps-no-token-{}",
+        SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_nanos()
+    ));
+    std::fs::create_dir_all(&temp_home).unwrap();
+
+    maps_bin()
+        .env_remove("KAGI_SESSION_TOKEN")
+        .env("XDG_CONFIG_HOME", temp_home.join("xdg-config"))
+        .args(["coffee"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("missing session token"));
 }

@@ -108,19 +108,26 @@ tasks:
 
         rm -rf \
           "${agents_root}/kagi-search" \
+          "${agents_root}/kagi-maps" \
           "${agents_root}/kagi-summarize" \
           "${claude_root}/kagi-search" \
+          "${claude_root}/kagi-maps" \
           "${claude_root}/kagi-summarize"
 
         install -d \
           "${agents_root}/kagi-search" \
+          "${agents_root}/kagi-maps" \
           "${agents_root}/kagi-summarize" \
           "${claude_root}/kagi-search" \
+          "${claude_root}/kagi-maps" \
           "${claude_root}/kagi-summarize"
 
         install -m 755 target/release/kagi-search "${install_root}/kagi-search"
+        install -m 755 target/release/kagi-maps "${install_root}/kagi-maps"
         install -m 755 target/release/kagi-summarize "${install_root}/kagi-summarize"
         install -m 644 skills/search/SKILL.md "${agents_root}/kagi-search/SKILL.md"
+        install -m 644 skills/maps/SKILL.md "${agents_root}/kagi-maps/SKILL.md"
         install -m 644 skills/summarize/SKILL.md "${agents_root}/kagi-summarize/SKILL.md"
         install -m 644 skills/search/SKILL.md "${claude_root}/kagi-search/SKILL.md"
+        install -m 644 skills/maps/SKILL.md "${claude_root}/kagi-maps/SKILL.md"
         install -m 644 skills/summarize/SKILL.md "${claude_root}/kagi-summarize/SKILL.md"

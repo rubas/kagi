@@ -114,10 +114,13 @@ jobs:
         run: |
           mkdir -p "${{ matrix.staging }}/bin" \
             "${{ matrix.staging }}/skills/kagi-search" \
+            "${{ matrix.staging }}/skills/kagi-maps" \
             "${{ matrix.staging }}/skills/kagi-summarize"
           cp target/release/kagi-search "${{ matrix.staging }}/bin/"
+          cp target/release/kagi-maps "${{ matrix.staging }}/bin/"
           cp target/release/kagi-summarize "${{ matrix.staging }}/bin/"
           cp skills/search/SKILL.md "${{ matrix.staging }}/skills/kagi-search/SKILL.md"
+          cp skills/maps/SKILL.md "${{ matrix.staging }}/skills/kagi-maps/SKILL.md"
           cp skills/summarize/SKILL.md "${{ matrix.staging }}/skills/kagi-summarize/SKILL.md"
           tar -czf "${{ matrix.archive }}" "${{ matrix.staging }}"
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
@@ -135,8 +138,9 @@ jobs:
           ref: ${{ needs.prepare.outputs.ref }}
       - name: Package skills archive
         run: |
-          mkdir -p kagi-skills/kagi-search kagi-skills/kagi-summarize
+          mkdir -p kagi-skills/kagi-search kagi-skills/kagi-maps kagi-skills/kagi-summarize
           cp skills/search/SKILL.md kagi-skills/kagi-search/SKILL.md
+          cp skills/maps/SKILL.md kagi-skills/kagi-maps/SKILL.md
           cp skills/summarize/SKILL.md kagi-skills/kagi-summarize/SKILL.md
           tar -czf kagi-skills.tar.gz kagi-skills
       - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
