@@ -9,6 +9,9 @@ license = "MIT"
 repository = "https://github.com/rubas/kagi"
 description = "Unix-style CLI for Kagi search, maps, and URL summarization"
 
+[lints.rust]
+unsafe-code = "forbid"
+
 [[bin]]
 name = "kagi-search"
 path = "src/bin/kagi-search.rs"
