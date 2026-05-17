@@ -133,7 +133,10 @@
           config = lib.mkIf cfg.enable {
             home.packages = [ cfg.package ];
 
-            home.file = mkSkillFiles ".agents/skills" // mkSkillFiles ".claude/skills";
+            home.file =
+              mkSkillFiles ".agents/skills"
+              // mkSkillFiles ".claude/skills"
+              // mkSkillFiles ".gemini/antigravity-cli/skills";
           };
         };
     };

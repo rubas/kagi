@@ -25,6 +25,7 @@ This installs:
 - `kagi-search`, `kagi-maps`, and `kagi-summarize` to `~/.local/bin`
 - skills to `~/.agents/skills/kagi-search`, `~/.agents/skills/kagi-maps`, `~/.agents/skills/kagi-summarize`
 - skills to `~/.claude/skills/kagi-search`, `~/.claude/skills/kagi-maps`, `~/.claude/skills/kagi-summarize`
+- skills to `~/.gemini/antigravity-cli/skills/kagi-search`, `~/.gemini/antigravity-cli/skills/kagi-maps`, `~/.gemini/antigravity-cli/skills/kagi-summarize`
 
 Supported platforms: Linux x86_64 and macOS aarch64.
 
