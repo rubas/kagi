@@ -20,8 +20,14 @@ tasks:
 
   lint:
     desc: Run Rust lints
+    deps: [test:zizmor]
     cmds:
       - cargo clippy --all-targets -- -D warnings
+
+  test:zizmor:
+    desc: Lint GitHub Actions workflows for security issues
+    cmds:
+      - zizmor --offline --persona=pedantic .github/workflows
 
   test:
     desc: Run the test suite
