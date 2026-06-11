@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    # Weekly advisory sweep so new RUSTSEC advisories against the merged
+    # lockfile surface between commits.
+    - cron: "17 6 * * 1"
 
 permissions: {}
 
@@ -43,4 +47,25 @@ jobs:
       - run: task test
       - run: task test:release-check
       - run: task deps:machete
+      - run: task deps:deny
+
+  audit:
+    name: Advisory audit
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read # checkout source
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-audit
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # stable
+        # zizmor: ignore[superfluous-actions] toolchain pinned deliberately
+        with:
+          toolchain: stable
+      - uses: arduino/setup-task@b91d5d2c96a56797b48ac1e0e89220bf64044611 # v2.0.0
+      - run: cargo install cargo-deny
       - run: task deps:deny

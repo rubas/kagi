@@ -25,12 +25,11 @@ kagi-summarize [OPTIONS] <URL>
 
 ## Options
 
-| Flag                    | Description             | Default                  |
-| ----------------------- | ----------------------- | ------------------------ |
-| `--type TYPE`           | `summary` or `takeaway` | `summary`                |
-| `--lang LANG`           | Target language code    | `EN`                     |
-| `-j, --json`            | JSON output             | text                     |
-| `--session-token TOKEN` | Explicit token override | env `KAGI_SESSION_TOKEN` |
+| Flag          | Description             | Default   |
+| ------------- | ----------------------- | --------- |
+| `--type TYPE` | `summary` or `takeaway` | `summary` |
+| `--lang LANG` | Target language code    | `EN`      |
+| `-j, --json`  | JSON output             | text      |
 
 ## When to Use Each Type
 

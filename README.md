@@ -17,7 +17,7 @@ Requires a Kagi account with an active session token.
 ### From a GitHub release
 
 ```bash
-curl -fSL https://github.com/rubas/kagi/releases/download/v0.3.0/install.sh | sh -s v0.3.0
+curl -fSL https://github.com/rubas/kagi/releases/download/v0.4.0/install.sh | sh -s v0.4.0
 ```
 
 This installs:
@@ -28,6 +28,13 @@ This installs:
 - skills to `~/.gemini/antigravity-cli/skills/kagi-search`, `~/.gemini/antigravity-cli/skills/kagi-maps`, `~/.gemini/antigravity-cli/skills/kagi-summarize`
 
 Supported platforms: Linux x86_64 and macOS aarch64.
+
+When the GitHub CLI (`gh`) is available, the installer verifies the build
+provenance attestations of both archives before installing anything; without
+`gh` it warns and continues. Set `KAGI_INSTALL_VERIFY=require` to fail instead,
+or `KAGI_INSTALL_VERIFY=skip` to disable verification. For a fully verifiable
+install path, prefer the Nix flake below: `flake.lock` pins every input by
+hash.
 
 ### From source
 
@@ -73,11 +80,24 @@ Or enable the Home Manager module to install the CLIs and companion skills:
 
 You need a Kagi session token. The binaries check these sources in order:
 
-1. `KAGI_SESSION_TOKEN` environment variable
-2. `$XDG_CONFIG_HOME/kagi/session-token` file
+1. `KAGI_SESSION_TOKEN` environment variable (ignored when empty)
+2. `$XDG_CONFIG_HOME/kagi/session-token`, falling back to
+   `~/.config/kagi/session-token` when `XDG_CONFIG_HOME` is unset, empty, or
+   relative
 3. Fail with an error if neither is set
 
-The binaries never embed or store secrets.
+Create the token file with owner-only permissions (paste the token, then
+Ctrl-D):
+
+```bash
+install -d -m 700 ~/.config/kagi
+(umask 077; cat > ~/.config/kagi/session-token)
+```
+
+The token is a full kagi.com session cookie, so the binaries refuse a token
+file that is group- or world-readable (`chmod 600` fixes it). The permission
+check does not apply to `KAGI_SESSION_TOKEN`. The binaries never embed or
+store secrets.
 
 ## Binaries
 
@@ -133,7 +153,7 @@ Options:
 - `--bbox <WEST,SOUTH,EAST,NORTH>`: map bounding box
 - `--zoom <N>`: map zoom level passed to Kagi Maps as `z`
 - `--sort <SORT>`: `relevance`, `rating`, `distance`, `price`
-- `--order <ORDER>`: `asc`, `desc`
+- `--order <ORDER>`: `asc`, `desc` (requires `--sort`)
 - `--output <text|json>`: explicit output mode
 - `-j, --json`: shortcut for JSON output
 - `-h, --help`: print help

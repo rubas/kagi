@@ -27,20 +27,19 @@ The query is positional - multiple words are joined automatically.
 
 ## Options
 
-| Flag                    | Description                                                                | Default                  |
-| ----------------------- | -------------------------------------------------------------------------- | ------------------------ |
-| `--limit N`             | Maximum results                                                            | 10                       |
-| `--region REGION`       | Country code (`ch`, `us`, `de`, ...) or `no_region`                        | -                        |
-| `--lens LENS`           | `default`, `programming`, `forums`, `pdfs`, `non-commercial`, `world-news` | -                        |
-| `--sort SORT`           | `recency`, `website`, `ad-trackers`                                        | -                        |
-| `--time TIME`           | `day`, `week`, `month`, `year` (conflicts with `--from`/`--to`)            | -                        |
-| `--from DATE`           | Start date `YYYY-MM-DD` (conflicts with `--time`)                          | -                        |
-| `--to DATE`             | End date `YYYY-MM-DD` (conflicts with `--time`)                            | -                        |
-| `--site DOMAIN`         | Restrict to a domain                                                       | -                        |
-| `--filetype EXT`        | Restrict to a file extension                                               | -                        |
-| `--verbatim`            | Disable query expansion                                                    | off                      |
-| `-j, --json`            | JSON output                                                                | text                     |
-| `--session-token TOKEN` | Explicit token override                                                    | env `KAGI_SESSION_TOKEN` |
+| Flag              | Description                                                                | Default |
+| ----------------- | -------------------------------------------------------------------------- | ------- |
+| `--limit N`       | Maximum results                                                            | 10      |
+| `--region REGION` | Country code (`ch`, `us`, `de`, ...) or `no_region`                        | -       |
+| `--lens LENS`     | `default`, `programming`, `forums`, `pdfs`, `non-commercial`, `world-news` | -       |
+| `--sort SORT`     | `recency`, `website`, `ad-trackers`                                        | -       |
+| `--time TIME`     | `day`, `week`, `month`, `year` (conflicts with `--from`/`--to`)            | -       |
+| `--from DATE`     | Start date `YYYY-MM-DD` (conflicts with `--time`)                          | -       |
+| `--to DATE`       | End date `YYYY-MM-DD` (conflicts with `--time`)                            | -       |
+| `--site DOMAIN`   | Restrict to a domain                                                       | -       |
+| `--filetype EXT`  | Restrict to a file extension                                               | -       |
+| `--verbatim`      | Disable query expansion                                                    | off     |
+| `-j, --json`      | JSON output                                                                | text    |
 
 ## Option Selection Guide
 

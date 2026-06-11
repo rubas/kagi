@@ -16,15 +16,16 @@ Rust CLI repo for `kagi-search`, `kagi-maps`, and `kagi-summarize`.
   - timeout handling
 - `task test:live` uses the real Kagi service and requires either:
   - `KAGI_SESSION_TOKEN`
-  - or `$XDG_CONFIG_HOME/kagi/session-token`
+  - or `${XDG_CONFIG_HOME:-$HOME/.config}/kagi/session-token` (mode 600)
 - If you only want signal without a failing task, use `task test:live:advisory`.
 
 ## Secrets
 
 - Never hardcode session tokens in code or docs.
 - Runtime token sources are:
-  - `KAGI_SESSION_TOKEN`
-  - `$XDG_CONFIG_HOME/kagi/session-token`
+  - `KAGI_SESSION_TOKEN` (ignored when empty)
+  - `${XDG_CONFIG_HOME:-$HOME/.config}/kagi/session-token`, refused unless
+    file mode is owner-only (600)
 
 ## CLI Contract
 

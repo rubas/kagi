@@ -221,7 +221,7 @@ pub struct MapsArgs {
     #[arg(long, value_enum)]
     pub sort: Option<MapsSort>,
 
-    #[arg(long, value_enum)]
+    #[arg(long, value_enum, requires = "sort")]
     pub order: Option<MapsOrder>,
 
     #[arg(long, value_enum, default_value_t = OutputFormat::Text)]

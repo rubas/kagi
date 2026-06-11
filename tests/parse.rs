@@ -77,6 +77,21 @@ fn detects_captcha_fixture() {
 }
 
 #[test]
+fn accepts_genuine_zero_result_page() {
+    let html = include_str!("fixtures/search/zero-results.html");
+    let output = parse_search_results(html, 10).unwrap();
+    assert!(output.results.is_empty());
+    assert!(output.related.is_empty());
+}
+
+#[test]
+fn rejects_unrecognized_page_instead_of_reporting_zero_results() {
+    let html = include_str!("fixtures/search/welcome.html");
+    let error = parse_search_results(html, 10).unwrap_err();
+    assert!(error.contains("unrecognized Kagi response page"));
+}
+
+#[test]
 fn parses_maps_results_fixture() {
     let body = include_bytes!("fixtures/maps/search.json");
     let output = parse_maps_results(body, 1).unwrap();
@@ -93,6 +108,16 @@ fn parses_maps_results_fixture() {
     assert_eq!(output.results[0].rating, Some(4.7));
     assert_eq!(output.results[0].review_count, Some(477));
     assert_eq!(output.results[0].price.as_deref(), Some("$$"));
+}
+
+#[test]
+fn maps_json_output_uses_snake_case_keys() {
+    let body = include_bytes!("fixtures/maps/search.json");
+    let output = parse_maps_results(body, 1).unwrap();
+
+    let json = serde_json::to_string(&output).unwrap();
+    assert!(json.contains("\"review_count\":477"));
+    assert!(!json.contains("reviewCount"));
 }
 
 #[test]
