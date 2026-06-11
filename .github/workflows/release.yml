@@ -251,7 +251,7 @@ jobs:
         run: |
           cp .github/release-notes.md release-notes.md
           sed -i "s|__VERSION__|${TAG}|g" release-notes.md
-      - uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+      - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         # zizmor: ignore[superfluous-actions] pinned action kept for multi-asset release upload
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
