@@ -28,10 +28,45 @@ fn parses_grouped_results_fixture() {
     let html = include_str!("fixtures/search/grouped.html");
     let output = parse_search_results(html, 10).unwrap();
 
-    assert_eq!(output.results.len(), 2);
+    let urls: Vec<&str> = output
+        .results
+        .iter()
+        .map(|result| result.url.as_str())
+        .collect();
+    assert_eq!(
+        urls,
+        [
+            "https://grouped.com/1",
+            "https://grouped.com/2",
+            "https://standard.com/1",
+            "https://grouped.com/3",
+            "https://standard.com/2",
+        ]
+    );
     assert_eq!(output.results[0].title, "Grouped One");
-    assert_eq!(output.results[0].url, "https://grouped.com/1");
     assert_eq!(output.results[0].snippet, "Grouped description one.");
+    assert_eq!(output.results[2].title, "Standard One");
+    assert_eq!(output.results[2].snippet, "Standard description one.");
+}
+
+#[test]
+fn grouped_results_keep_document_order_under_limit() {
+    let html = include_str!("fixtures/search/grouped.html");
+    let output = parse_search_results(html, 3).unwrap();
+
+    let urls: Vec<&str> = output
+        .results
+        .iter()
+        .map(|result| result.url.as_str())
+        .collect();
+    assert_eq!(
+        urls,
+        [
+            "https://grouped.com/1",
+            "https://grouped.com/2",
+            "https://standard.com/1",
+        ]
+    );
 }
 
 #[test]

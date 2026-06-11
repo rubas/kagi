@@ -104,8 +104,12 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
 
     let mut results = Vec::new();
 
-    if let Ok(selector) = Selector::parse(".search-result") {
-        let title_selector = Selector::parse(".__sri_title_link").ok();
+    // Standard and grouped results interleave on real pages, so collect both in
+    // one document-order pass; separate passes would push grouped rows behind
+    // standard rows and the limit would cut Kagi's top-ranked results.
+    if let Ok(selector) = Selector::parse(".search-result, .sr-group .__srgi") {
+        let standard_title_selector = Selector::parse(".__sri_title_link").ok();
+        let grouped_title_selector = Selector::parse(".__srgi-title a").ok();
         let description_selector = Selector::parse(".__sri-desc").ok();
 
         for element in doc.select(&selector) {
@@ -113,39 +117,12 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
                 break;
             }
 
-            let Some((title, url)) = title_selector.as_ref().and_then(|selector| {
-                let link = element.select(selector).next()?;
-                let href = link.value().attr("href")?.to_string();
-                let title = link.text().collect::<String>().trim().to_string();
-                Some((title, href))
-            }) else {
-                continue;
+            let is_grouped = element.value().classes().any(|class| class == "__srgi");
+            let title_selector = if is_grouped {
+                &grouped_title_selector
+            } else {
+                &standard_title_selector
             };
-
-            let snippet = description_selector
-                .as_ref()
-                .and_then(|selector| {
-                    let description = element.select(selector).next()?;
-                    Some(description.text().collect::<String>().trim().to_string())
-                })
-                .unwrap_or_default();
-
-            results.push(SearchResult {
-                url,
-                title,
-                snippet,
-            });
-        }
-    }
-
-    if let Ok(selector) = Selector::parse(".sr-group .__srgi") {
-        let title_selector = Selector::parse(".__srgi-title a").ok();
-        let description_selector = Selector::parse(".__sri-desc").ok();
-
-        for element in doc.select(&selector) {
-            if results.len() >= limit {
-                break;
-            }
 
             let Some((title, url)) = title_selector.as_ref().and_then(|selector| {
                 let link = element.select(selector).next()?;
@@ -181,8 +158,6 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
             }
         }
     }
-
-    results.truncate(limit);
 
     Ok(SearchOutput { results, related })
 }
