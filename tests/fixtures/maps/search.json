@@ -42,6 +42,38 @@
         "latitude": 47.37,
         "longitude": 8.52
       }
+    },
+    {
+      "name": "Budget Stand",
+      "coordinates": {
+        "latitude": 47.371,
+        "longitude": 8.521
+      },
+      "price": "$"
+    },
+    {
+      "name": "Bistro Range",
+      "coordinates": {
+        "latitude": 47.372,
+        "longitude": 8.522
+      },
+      "price": "€20–60"
+    },
+    {
+      "name": "Fine Dining Run",
+      "coordinates": {
+        "latitude": 47.373,
+        "longitude": 8.523
+      },
+      "price": "$$$"
+    },
+    {
+      "name": "Tasting Menu",
+      "coordinates": {
+        "latitude": 47.374,
+        "longitude": 8.524
+      },
+      "price": "€100+"
     }
   ]
 }

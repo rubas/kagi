@@ -29,7 +29,7 @@ The query is positional - multiple words are joined automatically.
 | `--bbox W,S,E,N` | Bounding box as west, south, east, north   | -                     |
 | `--zoom N`       | Map zoom level passed as `z`               | -                     |
 | `--sort SORT`    | `relevance`, `rating`, `distance`, `price` | Kagi order            |
-| `--order ORDER`  | `asc`, `desc`                              | sort-specific default |
+| `--order ORDER`  | `asc`, `desc` (requires `--sort`)          | sort-specific default |
 | `--output MODE`  | `text`, `json`                             | text                  |
 | `-j, --json`     | JSON output                                | text                  |
 

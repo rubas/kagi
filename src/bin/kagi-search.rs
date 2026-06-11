@@ -1,6 +1,8 @@
 use std::process::ExitCode;
 
-#[tokio::main]
+// One sequential HTTP request per invocation; a worker thread per core
+// would be pure startup overhead for an agent-invoked CLI.
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> ExitCode {
     match kagi::run_search_cli(std::env::args_os()).await {
         Ok(()) => ExitCode::SUCCESS,

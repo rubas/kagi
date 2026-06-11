@@ -26,7 +26,7 @@ pub struct MapsCoordinates {
     pub longitude: f64,
 }
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize)]
 pub struct MapsResult {
     pub name: String,
     pub address: Option<String>,
@@ -36,7 +36,6 @@ pub struct MapsResult {
     pub source: Option<String>,
     pub id: Option<String>,
     pub rating: Option<f64>,
-    #[serde(rename = "reviewCount")]
     pub review_count: Option<u64>,
     pub price: Option<String>,
     pub distance: Option<f64>,
@@ -79,28 +78,6 @@ struct MapsApiPoi {
 
 pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, String> {
     let doc = Html::parse_document(html);
-
-    let has_search_app = Selector::parse("#search-app")
-        .ok()
-        .is_some_and(|selector| doc.select(&selector).next().is_some());
-    let has_search_results = Selector::parse(".search-result")
-        .ok()
-        .is_some_and(|selector| doc.select(&selector).next().is_some());
-    let has_grouped_results = Selector::parse(".sr-group .__srgi")
-        .ok()
-        .is_some_and(|selector| doc.select(&selector).next().is_some());
-
-    let lower = html.to_lowercase();
-    if !has_search_app
-        && !has_search_results
-        && !has_grouped_results
-        && (lower.contains("cf-challenge")
-            || lower.contains("captcha")
-            || lower.contains("challenge-platform")
-            || lower.contains("just a moment"))
-    {
-        return Err("Blocked by CAPTCHA/challenge".into());
-    }
 
     let mut results = Vec::new();
 
@@ -159,6 +136,32 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
         }
     }
 
+    // Zero results is only trustworthy on a recognized result page. A
+    // genuine zero-result page still renders the search shell; a CAPTCHA
+    // interstitial, the kagi.com/welcome page, or a markup redesign does
+    // not, and silently reporting "no results" for those misleads callers.
+    if results.is_empty() {
+        let lower = html.to_lowercase();
+        if lower.contains("cf-challenge")
+            || lower.contains("captcha")
+            || lower.contains("challenge-platform")
+            || lower.contains("just a moment")
+        {
+            return Err("Blocked by CAPTCHA/challenge".into());
+        }
+
+        let has_search_shell = ["._0_main-search-results", ".footer-search-results"]
+            .iter()
+            .any(|shell_selector| {
+                Selector::parse(shell_selector)
+                    .ok()
+                    .is_some_and(|selector| doc.select(&selector).next().is_some())
+            });
+        if !has_search_shell {
+            return Err("unrecognized Kagi response page (markup change or block page)".into());
+        }
+    }
+
     Ok(SearchOutput { results, related })
 }
 
@@ -197,10 +200,8 @@ pub fn parse_summary_stream(body: &[u8]) -> Result<SummarizeOutput, String> {
         return Err("Empty response from summarizer".into());
     }
 
-    let chunks: Vec<&[u8]> = body.split(|&byte| byte == 0).collect();
-    let last_chunk = chunks
-        .iter()
-        .rev()
+    let last_chunk = body
+        .rsplit(|&byte| byte == 0)
         .find(|chunk| chunk.iter().any(|byte| !byte.is_ascii_whitespace()))
         .ok_or("No data chunks in response")?;
 
@@ -221,7 +222,11 @@ pub fn parse_summary_stream(body: &[u8]) -> Result<SummarizeOutput, String> {
 
     if json["state"].as_str() == Some("error") {
         let reply = json["reply"].as_str().unwrap_or("Unknown error");
-        return Err(format!("Summarizer error: {reply}"));
+        // The reply is server-derived text that ends up on a terminal.
+        return Err(format!(
+            "Summarizer error: {}",
+            crate::output::sanitize(reply)
+        ));
     }
 
     let markdown = json["md"]
