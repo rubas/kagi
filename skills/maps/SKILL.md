@@ -1,9 +1,9 @@
 ---
-name: maps
+name: kagi-maps
 description: |
   Covers: Place and address search via the kagi-maps CLI.
   Consult when: You need to find businesses, points of interest, addresses, or local map results.
-  Not covered: General web search (use the search skill). Summarizing URLs (use the summarize skill).
+  Not covered: General web search (use the kagi-search skill). Summarizing URLs (use the kagi-summarize skill).
 allowed-tools: Bash
 argument-hint: "<query>"
 ---
