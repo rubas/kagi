@@ -33,7 +33,7 @@ jobs:
       tag: ${{ steps.prepare.outputs.tag }}
       ref: ${{ steps.prepare.outputs.ref }}
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
@@ -84,7 +84,7 @@ jobs:
       group: ${{ github.workflow }}-${{ github.ref }}-tag
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         # zizmor: ignore[artipacked] credentials required to push the release tag
         with:
           fetch-depth: 0
@@ -121,11 +121,11 @@ jobs:
       group: ${{ github.workflow }}-${{ github.ref }}-build-${{ matrix.os }}
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.ref }}
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@3c5f7ea28cd621ae0bf5283f0e981fb97b8a7af9 # stable
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable
         # zizmor: ignore[superfluous-actions] toolchain pinned deliberately
         with:
           toolchain: stable
@@ -147,7 +147,7 @@ jobs:
           cp skills/maps/SKILL.md "$STAGING/skills/kagi-maps/SKILL.md"
           cp skills/summarize/SKILL.md "$STAGING/skills/kagi-summarize/SKILL.md"
           tar -czf "$ARCHIVE" "$STAGING"
-      - uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+      - uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
           subject-path: ${{ matrix.archive }}
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -168,7 +168,7 @@ jobs:
       group: ${{ github.workflow }}-${{ github.ref }}-skills
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.ref }}
           persist-credentials: false
@@ -179,7 +179,7 @@ jobs:
           cp skills/maps/SKILL.md kagi-skills/kagi-maps/SKILL.md
           cp skills/summarize/SKILL.md kagi-skills/kagi-summarize/SKILL.md
           tar -czf kagi-skills.tar.gz kagi-skills
-      - uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
+      - uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
           subject-path: kagi-skills.tar.gz
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -198,7 +198,7 @@ jobs:
       group: ${{ github.workflow }}-${{ github.ref }}-installer
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.ref }}
           persist-credentials: false
@@ -219,7 +219,7 @@ jobs:
       group: ${{ github.workflow }}-${{ github.ref }}-release
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ needs.prepare.outputs.ref }}
           persist-credentials: false
@@ -251,7 +251,7 @@ jobs:
         run: |
           cp .github/release-notes.md release-notes.md
           sed -i "s|__VERSION__|${TAG}|g" release-notes.md
-      - uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
+      - uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
         # zizmor: ignore[superfluous-actions] pinned action kept for multi-asset release upload
         with:
           tag_name: ${{ needs.prepare.outputs.tag }}
