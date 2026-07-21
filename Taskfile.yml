@@ -78,6 +78,17 @@ tasks:
     cmds:
       - cargo deny check advisories bans sources
 
+  outdated:
+    desc: Show available dependency upgrades without changing anything
+    cmds:
+      - cargo upgrade --dry-run --incompatible allow
+
+  upgrade:
+    desc: Upgrade Cargo dependencies to the latest versions, then refresh the lockfile
+    cmds:
+      - cargo upgrade --incompatible allow
+      - cargo update
+
   check:
     desc: Run all verification checks
     cmds:
