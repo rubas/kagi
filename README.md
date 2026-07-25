@@ -46,8 +46,12 @@ For local development with the required native build tools:
 
 ```bash
 nix develop
-task ci
+task check
 ```
+
+`task lint` also runs [zizmor](https://github.com/zizmorcore/zizmor) over the
+workflows, and the dev shell does not include it. Install `zizmor` separately or
+that step fails.
 
 ### With Nix flakes
 
