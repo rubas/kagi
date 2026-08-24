@@ -1,53 +1,62 @@
-# kagi - Project Rules
+# kagi
 
-Rust CLI repo for `kagi-search`, `kagi-maps`, and `kagi-summarize`.
+## Goal
 
-## Testing
+Unofficial Unix-style CLIs for Kagi: `kagi-search`, `kagi-maps`, `kagi-summarize`.
+Each binary ships a companion agent skill from `skills/`.
 
-- Run `task test` for normal local verification.
-- Run `task test:live` when you change real request-path code:
-  - token resolution
-  - HTTP client behavior
-  - Kagi request parameters
-  - maps request parameters
-  - search HTML parsing
-  - maps JSON parsing
-  - summarize stream parsing
-  - timeout handling
-- `task test:live` uses the real Kagi service and requires either:
-  - `KAGI_SESSION_TOKEN`
-  - or `${XDG_CONFIG_HOME:-$HOME/.config}/kagi/session-token` (mode 600)
-- If you only want signal without a failing task, use `task test:live:advisory`.
+## Gates
 
-## Secrets
+- `task check` (fmt:check, lint, test) before you push.
+- `task ci` adds the release-profile check, `nix build`, cargo-machete, and
+  cargo-deny. GitHub Actions runs every one of those except `task test:nix`, so
+  run `task ci` yourself after you touch `flake.nix`, `flake.lock`, or
+  `Cargo.toml`. A lock-only input refresh still ships a Nix build nothing else
+  checks.
+- `task lint` calls `zizmor`. The `nix develop` shell does not ship it, so put
+  `zizmor` on `PATH` before you run lint or check.
+- `task test:live` hits the real Kagi service. Run it when you change the
+  request path or a parser: `src/cli.rs`, `src/client.rs`, or `src/parse.rs`. It
+  needs `KAGI_SESSION_TOKEN` or `~/.config/kagi/session-token` and fails without
+  one. `task test:live:advisory` gives the same signal without failing the task.
 
-- Never hardcode session tokens in code or docs.
-- Runtime token sources are:
-  - `KAGI_SESSION_TOKEN` (ignored when empty)
-  - `${XDG_CONFIG_HOME:-$HOME/.config}/kagi/session-token`, refused unless
-    file mode is owner-only (600)
+## Layout
 
-## CLI Contract
+- `src/cli.rs`: argument definitions and the `as_api_value` tables that turn
+  `--lens`, `--sort`, `--time`, and `--type` into raw Kagi parameter values.
+- `src/client.rs`: token resolution, HTTP client, Kagi request parameters.
+- `src/parse.rs`: search HTML, maps JSON, summarize stream.
+- `skills/search`, `skills/maps`, `skills/summarize` install under the binary
+  names `kagi-search`, `kagi-maps`, `kagi-summarize`. A rename changes all of
+  these together:
+  - `install.sh` and the `install` task in `Taskfile.yml`
+  - `postInstall` and `skillNames` in `flake.nix`
+  - `.github/workflows/release.yml`
+  - the `name:` front matter in each `skills/*/SKILL.md`
+  - the documented install paths in `README.md`
+- `tests/live.rs` runs only under `--ignored`.
 
-- Keep `kagi-search`, `kagi-maps`, and `kagi-summarize` separate.
-- Do not reintroduce a combined multi-purpose command.
+## House decisions
 
-## Release Flow
+- Three separate binaries. Do not reintroduce a combined command.
+- Never hardcode a session token. The client reads `KAGI_SESSION_TOKEN` (empty
+  counts as unset), then `$XDG_CONFIG_HOME/kagi/session-token`, falling back to
+  `~/.config/kagi/session-token`. It refuses a token file that is group- or
+  world-readable.
+- `--sort` means two different things. `kagi-search` sends it to Kagi as the
+  `order` parameter. `kagi-maps` fetches the whole page, sorts locally, then
+  truncates to `--limit`.
+- A version bump is the release trigger: when a commit on `main` changes
+  `version` in `Cargo.toml`, `release.yml` tags `v<version>` and publishes. No
+  bump, no release. Push a tag by hand only to recover a failed run, through
+  `workflow_dispatch` on `release.yml`.
 
-- Releases are created when a commit merged to `main` bumps the package version in `Cargo.toml`.
-- The `release` workflow detects the version bump on `main`, creates the matching `v<version>` tag, and publishes the GitHub release in the same run.
-- `workflow_dispatch` on `release.yml` remains the manual fallback for recovery runs against an existing tag or ref.
-- Do not push release tags by hand unless the workflow failed and you are recovering it deliberately.
+## Pitfalls
 
-Exact sequence:
-
-1. Make the intended version bump in `Cargo.toml` in the same PR as the releaseable changes.
-2. Open the PR.
-3. Merge the PR to `main`.
-4. The `release` workflow compares the new `Cargo.toml` version on `main` with the previous commit.
-5. If the version changed, it creates and pushes `vX.Y.Z`, builds the archives from that tag, and publishes the release.
-
-- No version bump in `Cargo.toml` means no release.
-- One version bump merged to `main` means one release attempt.
-- Do not tag feature branches or intermediate commits.
-- Bump `Cargo.toml` only when you want the merge to produce a release.
+- `flake.nix` repeats the package version as a literal. Bump it in the same
+  commit as `Cargo.toml`, or `nix build` produces a package with the old
+  version.
+- The README pins the installer URL to a release tag. Update it with the version
+  bump, or the documented install command points at the previous release.
+- `ci.yml` skips a pull request whose author is not the repository owner. A
+  contributor PR shows no checks; that is the gate, not a broken run.
