@@ -9,6 +9,13 @@
     # kagi instead of all ~246 deps. crane is a pure lib (mkLib pkgs) with no
     # nixpkgs input to follow.
     crane.url = "github:ipetkov/crane";
+
+    # wreq declares rust-version = "1.98". nixpkgs-unstable still ships 1.97.1,
+    # so the toolchain comes from rust-overlay instead of the package set.
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -16,6 +23,7 @@
       self,
       nixpkgs,
       crane,
+      rust-overlay,
       ...
     }:
     let
@@ -26,6 +34,18 @@
 
       forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
 
+      pkgsFor =
+        system:
+        import nixpkgs {
+          inherit system;
+          overlays = [ (import rust-overlay) ];
+        };
+
+      # One toolchain for crane and the dev shell, so `nix build` and
+      # `task check` compile with the same rustc. The default profile carries
+      # rustfmt and clippy, which `task check` needs.
+      rustToolchainFor = pkgs: pkgs.rust-bin.stable.latest.default;
+
       # crane's two stages share one argument set. cargoArtifacts compiles the
       # dependency tree once (keyed on Cargo.toml + Cargo.lock, with kagi's own
       # crate stubbed); the binary cache then serves it so a change to kagi's source
@@ -33,10 +53,10 @@
       craneFor =
         pkgs:
         let
-          craneLib = crane.mkLib pkgs;
+          craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchainFor;
           commonArgs = {
             pname = "kagi";
-            version = "0.4.0";
+            version = "0.4.1";
             # cleanSource, not crane's cleanCargoSource: postInstall installs the
             # skills/*/SKILL.md files from the build source, which a cargo-only
             # filter would drop.
@@ -89,7 +109,7 @@
         pkgs:
         pkgs.mkShell {
           packages = [
-            pkgs.cargo
+            (rustToolchainFor pkgs)
             pkgs.cargo-deny
             pkgs.cargo-machete
             pkgs.cmake
@@ -97,10 +117,7 @@
             pkgs.go-task
             pkgs.nodejs
             pkgs.pkg-config
-            pkgs.rustc
-            pkgs.rustfmt
             pkgs.zig
-            pkgs.clippy
           ];
 
           inputsFrom = [ (packageFor pkgs) ];
@@ -110,7 +127,7 @@
       packages = forAllSystems (
         system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = pkgsFor system;
           kagi = packageFor pkgs;
         in
         {
@@ -122,7 +139,7 @@
       checks = forAllSystems (
         system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = pkgsFor system;
         in
         {
           default = checksFor pkgs;
@@ -132,7 +149,7 @@
       devShells = forAllSystems (
         system:
         let
-          pkgs = nixpkgs.legacyPackages.${system};
+          pkgs = pkgsFor system;
         in
         {
           default = devShellFor pkgs;

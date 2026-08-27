@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.4.1] - 2026-08-28
+
+### Changed
+
+- Move to the maintained `wreq` line: `wreq` 0.16.1 and `wreq-util` 0.2.0.
+  Upstream reset the version numbers. It yanked the 5.x and 2.2.x lines, and
+  it froze the 6.0.0-rc series. The old code that kagi used now has the
+  number 0.15.3. Development continues on 0.16. This is the true upgrade,
+  not the renumber.
+- `wreq` 0.16 replaces the BoringSSL binding with `btls`. It moves the HTTP
+  core into `wreq-proto`, and it rebuilds the client on Tower middleware. The
+  CLI, the output, and the Chrome 131 profile do not change.
+- The Nix build and the dev shell now take the Rust toolchain from
+  `rust-overlay`. `wreq` 0.16 needs rustc 1.98, but nixpkgs-unstable still
+  has 1.97.1.
+- `Cargo.toml` now declares `rust-version = "1.98"`.
+- `clap` 4.6.3 to 4.6.6, and a lockfile refresh of the transitive tree.
+- `flake.lock`: refresh `nixpkgs` and `crane`, and add `rust-overlay`.
+
 ## [0.4.0] - 2026-06-11
 
 ### Breaking
