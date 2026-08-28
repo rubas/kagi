@@ -35,9 +35,9 @@ pub async fn search(args: &SearchArgs) -> Result<SearchOutput, Error> {
         .map_err(|error| Error::new(format!("Search request failed: {error}")))?;
 
     // An invalid or expired session answers with a redirect to
-    // kagi.com/welcome, which serves 200; catch it by the final URL because
+    // kagi.com/welcome, which serves 200; catch it by the final URI because
     // the status check below never fires for it.
-    if response.url().path() != "/html/search" {
+    if response.uri().path() != "/html/search" {
         return Err(Error::new("invalid or expired session token"));
     }
 
