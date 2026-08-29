@@ -74,9 +74,7 @@ for required in \
   "$tmp/$root/bin/kagi-search" \
   "$tmp/$root/bin/kagi-maps" \
   "$tmp/$root/bin/kagi-summarize" \
-  "$tmp/kagi-skills/kagi-search/SKILL.md" \
-  "$tmp/kagi-skills/kagi-maps/SKILL.md" \
-  "$tmp/kagi-skills/kagi-summarize/SKILL.md"; do
+  "$tmp/kagi-skills/kagi/SKILL.md"; do
   if [ ! -f "$required" ]; then
     echo "unexpected archive layout: missing ${required#"$tmp"/}" >&2
     exit 1
@@ -90,41 +88,22 @@ gemini_root="${HOME}/.gemini/antigravity-cli/skills"
 
 install -d "$bin_dir" "$agents_root" "$claude_root" "$gemini_root"
 
+# The three per-binary skill dirs of v0.4 and earlier are legacy; remove them.
 rm -rf \
-  "${agents_root}/kagi-search" \
-  "${agents_root}/kagi-maps" \
-  "${agents_root}/kagi-summarize" \
-  "${claude_root}/kagi-search" \
-  "${claude_root}/kagi-maps" \
-  "${claude_root}/kagi-summarize" \
-  "${gemini_root}/kagi-search" \
-  "${gemini_root}/kagi-maps" \
-  "${gemini_root}/kagi-summarize"
+  "${agents_root}/kagi" "${claude_root}/kagi" "${gemini_root}/kagi" \
+  "${agents_root}/kagi-search" "${agents_root}/kagi-maps" "${agents_root}/kagi-summarize" \
+  "${claude_root}/kagi-search" "${claude_root}/kagi-maps" "${claude_root}/kagi-summarize" \
+  "${gemini_root}/kagi-search" "${gemini_root}/kagi-maps" "${gemini_root}/kagi-summarize"
 
-install -d \
-  "${agents_root}/kagi-search" \
-  "${agents_root}/kagi-maps" \
-  "${agents_root}/kagi-summarize" \
-  "${claude_root}/kagi-search" \
-  "${claude_root}/kagi-maps" \
-  "${claude_root}/kagi-summarize" \
-  "${gemini_root}/kagi-search" \
-  "${gemini_root}/kagi-maps" \
-  "${gemini_root}/kagi-summarize"
+install -d "${agents_root}/kagi" "${claude_root}/kagi" "${gemini_root}/kagi"
 
 install -m 755 "$tmp/$root/bin/kagi-search" "${bin_dir}/kagi-search"
 install -m 755 "$tmp/$root/bin/kagi-maps" "${bin_dir}/kagi-maps"
 install -m 755 "$tmp/$root/bin/kagi-summarize" "${bin_dir}/kagi-summarize"
 
-install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "${agents_root}/kagi-search/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi-maps/SKILL.md" "${agents_root}/kagi-maps/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "${agents_root}/kagi-summarize/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "${claude_root}/kagi-search/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi-maps/SKILL.md" "${claude_root}/kagi-maps/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "${claude_root}/kagi-summarize/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi-search/SKILL.md" "${gemini_root}/kagi-search/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi-maps/SKILL.md" "${gemini_root}/kagi-maps/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi-summarize/SKILL.md" "${gemini_root}/kagi-summarize/SKILL.md"
+install -m 644 "$tmp/kagi-skills/kagi/SKILL.md" "${agents_root}/kagi/SKILL.md"
+install -m 644 "$tmp/kagi-skills/kagi/SKILL.md" "${claude_root}/kagi/SKILL.md"
+install -m 644 "$tmp/kagi-skills/kagi/SKILL.md" "${gemini_root}/kagi/SKILL.md"
 
 echo "installed kagi-search, kagi-maps and kagi-summarize to ${bin_dir}"
 echo "installed skills to ${agents_root}, ${claude_root} and ${gemini_root}"

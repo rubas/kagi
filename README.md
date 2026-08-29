@@ -17,15 +17,13 @@ Requires a Kagi account with an active session token.
 ### From a GitHub release
 
 ```bash
-curl -fSL https://github.com/rubas/kagi/releases/download/v0.4.1/install.sh | sh -s v0.4.1
+curl -fSL https://github.com/rubas/kagi/releases/download/v0.5.0/install.sh | sh -s v0.5.0
 ```
 
 This installs:
 
 - `kagi-search`, `kagi-maps`, and `kagi-summarize` to `~/.local/bin`
-- skills to `~/.agents/skills/kagi-search`, `~/.agents/skills/kagi-maps`, `~/.agents/skills/kagi-summarize`
-- skills to `~/.claude/skills/kagi-search`, `~/.claude/skills/kagi-maps`, `~/.claude/skills/kagi-summarize`
-- skills to `~/.gemini/antigravity-cli/skills/kagi-search`, `~/.gemini/antigravity-cli/skills/kagi-maps`, `~/.gemini/antigravity-cli/skills/kagi-summarize`
+- the `kagi` skill to `~/.agents/skills`, `~/.claude/skills`, and `~/.gemini/antigravity-cli/skills`
 
 Supported platforms: Linux x86_64 and macOS aarch64.
 
@@ -183,11 +181,9 @@ kagi-summarize 'https://www.rust-lang.org/learn' --lang DE --json
 
 ## Skills
 
-This repo ships companion skills for Claude Code and other agents:
+This repo ships one companion skill for Claude Code and other agents:
 
-- [`skills/search/SKILL.md`](skills/search/SKILL.md)
-- [`skills/maps/SKILL.md`](skills/maps/SKILL.md)
-- [`skills/summarize/SKILL.md`](skills/summarize/SKILL.md)
+- [`skills/kagi/SKILL.md`](skills/kagi/SKILL.md): one skill covering search, maps, and summarize
 
 ## License
 

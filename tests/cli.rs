@@ -222,49 +222,40 @@ fn maps_rejects_order_without_sort() {
         .stderr(predicate::str::contains("--sort"));
 }
 
-/// Every flag a SKILL.md options table documents must exist in the
-/// binary's --help output, so installed agents never emit invocations
-/// that fail to parse.
-fn assert_skill_flags_exist(skill_markdown: &str, mut command: Command) {
-    let help = command.arg("--help").output().unwrap();
-    assert!(help.status.success());
-    let help = String::from_utf8(help.stdout).unwrap();
+/// Every flag the SKILL.md options tables document must exist in the
+/// --help output of at least one binary, so installed agents never emit
+/// invocations that fail to parse. The skill covers all three binaries,
+/// so the check runs against their combined help text.
+#[test]
+fn kagi_skill_documents_only_real_flags() {
+    let skill_markdown = include_str!("../skills/kagi/SKILL.md");
+    let mut helps = String::new();
+    for mut command in [search_bin(), maps_bin(), summarize_bin()] {
+        let help = command.arg("--help").output().unwrap();
+        assert!(help.status.success());
+        helps.push_str(&String::from_utf8(help.stdout).unwrap());
+    }
 
     let mut checked = 0;
     for line in skill_markdown.lines() {
-        let Some(rest) = line.strip_prefix("| `") else {
+        if !line.starts_with('|') {
             continue;
-        };
-        let Some(cell) = rest.split('`').next() else {
-            continue;
-        };
-        for token in cell.split([' ', ',']) {
-            if token.starts_with("--") {
-                assert!(
-                    help.contains(token),
-                    "SKILL.md documents {token}, which is missing from --help"
-                );
-                checked += 1;
+        }
+        // Flags sit in inline code spans anywhere in a table row.
+        for (i, span) in line.split('`').enumerate() {
+            if i % 2 == 0 {
+                continue;
+            }
+            for token in span.split([' ', ',']) {
+                if token.starts_with("--") {
+                    assert!(
+                        helps.contains(token),
+                        "SKILL.md documents {token}, which no binary's --help lists"
+                    );
+                    checked += 1;
+                }
             }
         }
     }
-    assert!(checked > 0, "no flags found in SKILL.md options table");
-}
-
-#[test]
-fn search_skill_documents_only_real_flags() {
-    assert_skill_flags_exist(include_str!("../skills/search/SKILL.md"), search_bin());
-}
-
-#[test]
-fn maps_skill_documents_only_real_flags() {
-    assert_skill_flags_exist(include_str!("../skills/maps/SKILL.md"), maps_bin());
-}
-
-#[test]
-fn summarize_skill_documents_only_real_flags() {
-    assert_skill_flags_exist(
-        include_str!("../skills/summarize/SKILL.md"),
-        summarize_bin(),
-    );
+    assert!(checked > 0, "no flags found in SKILL.md options tables");
 }
