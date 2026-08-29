@@ -115,22 +115,7 @@ Usage:
 kagi-search [OPTIONS] <QUERY>...
 ```
 
-Options:
-
-- `--limit <N>`: maximum results, default `10`
-- `--region <REGION>`: region code such as `ch`, `us`, `de`, or `no_region`
-- `--lens <LENS>`: `default`, `programming`, `forums`, `pdfs`, `non-commercial`, `world-news`
-- `--sort <SORT>`: `recency`, `website`, `ad-trackers`
-- `--time <RANGE>`: `day`, `week`, `month`, `year`
-- `--from <YYYY-MM-DD>`: start date, cannot be combined with `--time`
-- `--to <YYYY-MM-DD>`: end date, cannot be combined with `--time`
-- `--site <DOMAIN>`: append a `site:` filter to the query
-- `--filetype <EXT>`: append a `filetype:` filter to the query
-- `--verbatim`: disable query expansion
-- `--output <text|json>`: explicit output mode
-- `-j, --json`: shortcut for JSON output
-- `-h, --help`: print help
-- `-V, --version`: print version
+Run the binary with `--help` for all flags.
 
 Examples:
 
@@ -150,18 +135,7 @@ Usage:
 kagi-maps [OPTIONS] <QUERY>...
 ```
 
-Options:
-
-- `--limit <N>`: maximum results, default `10`
-- `--ll <LAT,LON>`: search origin coordinate, such as `47.3769,8.5417`
-- `--bbox <WEST,SOUTH,EAST,NORTH>`: map bounding box
-- `--zoom <N>`: map zoom level passed to Kagi Maps as `z`
-- `--sort <SORT>`: `relevance`, `rating`, `distance`, `price`
-- `--order <ORDER>`: `asc`, `desc` (requires `--sort`)
-- `--output <text|json>`: explicit output mode
-- `-j, --json`: shortcut for JSON output
-- `-h, --help`: print help
-- `-V, --version`: print version
+Run the binary with `--help` for all flags.
 
 Examples:
 
@@ -180,14 +154,7 @@ Usage:
 kagi-summarize [OPTIONS] <URL>
 ```
 
-Options:
-
-- `--type <summary|takeaway>`: summary mode, default `summary`
-- `--lang <LANG>`: target language, default `EN`
-- `--output <text|json>`: explicit output mode
-- `-j, --json`: shortcut for JSON output
-- `-h, --help`: print help
-- `-V, --version`: print version
+Run the binary with `--help` for all flags.
 
 Examples:
 

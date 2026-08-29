@@ -1,16 +1,9 @@
 ---
 name: kagi-summarize
 description: |
-  Covers: URL summarization via the kagi-summarize CLI (human-readable or JSON output).
-  Consult when: The user provides a specific URL and wants a summary or key takeaways from it.
-  Also use as the fallback when a page is too large to fetch directly (WebFetch
-  `maxContentLength` errors, multi-MB pages) — summarization runs server-side, so page
-  size doesn't matter.
-  Use this skill whenever the user asks you to "summarize this page", "what does this article say",
-  "give me the key points from this URL", "TLDR this link", or provides a URL they want distilled -
-  even if they don't explicitly say "summarize."
-  Not covered: Web search (use the kagi-search skill). Fetching raw HTML (use WebFetch; if
-  WebFetch fails on size, come back here).
+  Use when the user gives a URL and wants a summary, key points, or a TLDR, and as
+  the fallback when a page is too large for WebFetch (Kagi summarizes server-side).
+  Not for web search (kagi-search).
 allowed-tools: Bash
 argument-hint: "<url>"
 ---
