@@ -1,12 +1,9 @@
 ---
 name: kagi-search
 description: |
-  Covers: Web search via the kagi-search CLI (human-readable or JSON output).
-  Consult when: You need to search the web for current information, look something up, find documentation,
-  check recent news or events, research a topic, or get search results for any query.
-  Use this skill whenever the user asks you to "search for", "look up", "find out",
-  "what's the latest on", "google", or wants web results - even if they don't explicitly say "search."
-  Not covered: Summarizing a URL (use the kagi-summarize skill). Fetching raw HTML (use WebFetch).
+  Use when you need web results: current information, documentation, news, research,
+  or when the user says "search", "look up", "find out", "google". Not for one URL
+  (kagi-summarize) and not for raw HTML (WebFetch).
 allowed-tools: Bash
 argument-hint: "<query>"
 ---
