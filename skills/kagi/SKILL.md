@@ -1,10 +1,6 @@
 ---
 name: kagi
-description: |
-  Use when you need web results, places, or a URL summary: current information,
-  documentation, news, research, businesses, addresses, or a page too large for
-  WebFetch. Also when the user says "search", "look up", "google", or gives a
-  URL and wants the key points.
+description: "Use when you need web search, places, or a summary of a URL."
 allowed-tools: Bash
 argument-hint: "<query or url>"
 ---
