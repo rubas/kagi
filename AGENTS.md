@@ -26,9 +26,8 @@ Each binary ships a companion agent skill from `skills/`.
   `--lens`, `--sort`, `--time`, and `--type` into raw Kagi parameter values.
 - `src/client.rs`: token resolution, HTTP client, Kagi request parameters.
 - `src/parse.rs`: search HTML, maps JSON, summarize stream.
-- `skills/search`, `skills/maps`, `skills/summarize` install under the binary
-  names `kagi-search`, `kagi-maps`, `kagi-summarize`. A rename changes all of
-  these together:
+- `skills/kagi` is the one skill; it installs as `kagi`. A rename changes all
+  of these together:
   - `install.sh` and the `install` task in `Taskfile.yml`
   - `postInstall` and `skillNames` in `flake.nix`
   - `.github/workflows/release.yml`

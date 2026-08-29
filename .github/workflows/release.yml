@@ -174,10 +174,8 @@ jobs:
           persist-credentials: false
       - name: Package skills archive
         run: |
-          mkdir -p kagi-skills/kagi-search kagi-skills/kagi-maps kagi-skills/kagi-summarize
-          cp skills/search/SKILL.md kagi-skills/kagi-search/SKILL.md
-          cp skills/maps/SKILL.md kagi-skills/kagi-maps/SKILL.md
-          cp skills/summarize/SKILL.md kagi-skills/kagi-summarize/SKILL.md
+          mkdir -p kagi-skills/kagi
+          cp skills/kagi/SKILL.md kagi-skills/kagi/SKILL.md
           tar -czf kagi-skills.tar.gz kagi-skills
       - uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:

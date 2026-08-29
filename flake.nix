@@ -56,7 +56,7 @@
           craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchainFor;
           commonArgs = {
             pname = "kagi";
-            version = "0.4.1";
+            version = "0.5.0";
             # cleanSource, not crane's cleanCargoSource: postInstall installs the
             # skills/*/SKILL.md files from the build source, which a cargo-only
             # filter would drop.
@@ -88,9 +88,7 @@
             # the installable package only builds the binaries.
             doCheck = false;
             postInstall = ''
-              install -Dm644 skills/search/SKILL.md "$out/share/kagi/skills/kagi-search/SKILL.md"
-              install -Dm644 skills/maps/SKILL.md "$out/share/kagi/skills/kagi-maps/SKILL.md"
-              install -Dm644 skills/summarize/SKILL.md "$out/share/kagi/skills/kagi-summarize/SKILL.md"
+              install -Dm644 skills/kagi/SKILL.md "$out/share/kagi/skills/kagi/SKILL.md"
             '';
           }
         );
@@ -166,11 +164,7 @@
         let
           cfg = config.programs.kagi;
           package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
-          skillNames = [
-            "kagi-search"
-            "kagi-maps"
-            "kagi-summarize"
-          ];
+          skillNames = [ "kagi" ];
 
           mkSkillFiles =
             root:
