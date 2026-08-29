@@ -136,16 +136,11 @@ jobs:
           STAGING: ${{ matrix.staging }}
           ARCHIVE: ${{ matrix.archive }}
         run: |
-          mkdir -p "$STAGING/bin" \
-            "$STAGING/skills/kagi-search" \
-            "$STAGING/skills/kagi-maps" \
-            "$STAGING/skills/kagi-summarize"
+          mkdir -p "$STAGING/bin" "$STAGING/skills/kagi"
           cp target/release/kagi-search "$STAGING/bin/"
           cp target/release/kagi-maps "$STAGING/bin/"
           cp target/release/kagi-summarize "$STAGING/bin/"
-          cp skills/search/SKILL.md "$STAGING/skills/kagi-search/SKILL.md"
-          cp skills/maps/SKILL.md "$STAGING/skills/kagi-maps/SKILL.md"
-          cp skills/summarize/SKILL.md "$STAGING/skills/kagi-summarize/SKILL.md"
+          cp skills/kagi/SKILL.md "$STAGING/skills/kagi/SKILL.md"
           tar -czf "$ARCHIVE" "$STAGING"
       - uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
         with:
@@ -239,9 +234,9 @@ jobs:
           test -x "$smoke_home/.local/bin/kagi-search"
           test -x "$smoke_home/.local/bin/kagi-maps"
           test -x "$smoke_home/.local/bin/kagi-summarize"
-          test -f "$smoke_home/.agents/skills/kagi-search/SKILL.md"
-          test -f "$smoke_home/.claude/skills/kagi-maps/SKILL.md"
-          test -f "$smoke_home/.gemini/antigravity-cli/skills/kagi-summarize/SKILL.md"
+          test -f "$smoke_home/.agents/skills/kagi/SKILL.md"
+          test -f "$smoke_home/.claude/skills/kagi/SKILL.md"
+          test -f "$smoke_home/.gemini/antigravity-cli/skills/kagi/SKILL.md"
       - name: Write release notes
         shell: bash
         env:

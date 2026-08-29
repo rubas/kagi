@@ -56,7 +56,7 @@
           craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchainFor;
           commonArgs = {
             pname = "kagi";
-            version = "0.5.0";
+            version = "0.5.1";
             # cleanSource, not crane's cleanCargoSource: postInstall installs the
             # skills/*/SKILL.md files from the build source, which a cargo-only
             # filter would drop.
