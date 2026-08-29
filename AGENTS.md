@@ -36,7 +36,7 @@ Each binary ships a companion agent skill from `skills/`.
   - the documented install paths in `README.md`
 - `tests/live.rs` runs only under `--ignored`.
 
-## House decisions
+## Decisions
 
 - Three separate binaries. Do not reintroduce a combined command.
 - Never hardcode a session token. The client reads `KAGI_SESSION_TOKEN` (empty
