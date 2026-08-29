@@ -1,0 +1,23 @@
+# Stub: the review lives in rubas/ci and updates centrally.
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, reopened, synchronize]
+
+permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    permissions:
+      contents: read # source and history context
+      actions: read # find the last reviewed commit
+      pull-requests: write # inline review comments
+      id-token: write # OIDC for the Infisical secret fetch
+    # Same-owner reusable workflow; @main is the design, edits there reach
+    # every repo without a sync run. zizmor only honors the trailing ignore.
+    uses: rubas/ci/.github/workflows/claude-review.yml@main # zizmor: ignore[unpinned-uses]
