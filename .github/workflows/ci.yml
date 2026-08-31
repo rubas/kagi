@@ -44,6 +44,7 @@ jobs:
             | tar -xz -C "$HOME/.local/bin" zizmor
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
       - run: task lint
+      - run: shellcheck install.sh
       - run: task test
       - run: task test:release-check
       - run: task deps:machete

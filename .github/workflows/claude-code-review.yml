@@ -1,4 +1,11 @@
-# Stub: the review lives in rubas/ci and updates centrally.
+# Self-contained copy of rubas/ci claude-review.yml: this repo is public and
+# cannot call a reusable workflow in the private rubas/ci. Keep it in sync by
+# hand when rubas/ci changes.
+#
+# Auth: no GitHub secrets. The job mints a GitHub OIDC token, exchanges it for
+# a short-lived Infisical token over the read-only rubas identity, and reads
+# the shared Claude OAuth token. All values below are identifiers, safe to
+# commit; only the token is a secret and it never leaves Infisical.
 name: Claude Code Review
 
 on:
@@ -12,12 +19,250 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  review:
+  claude-review:
+    name: Claude Review
+    # Runs on every push to an open PR, not only when it opens: a fix pushed
+    # after a review used to ship unreviewed. The concurrency group above cancels
+    # the superseded run, so a burst of pushes reviews the last commit once
+    # instead of queueing. Fork PRs cannot mint this repo's OIDC subject.
+    if: >-
+      github.event.pull_request.draft == false &&
+      github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    # Each attempt below caps itself at 15 minutes. A failed account fails in
+    # seconds, so this only bounds a pathological run.
+    timeout-minutes: 30
     permissions:
       contents: read # source and history context
-      actions: read # find the last reviewed commit
+      actions: read # workflow-runs API: find the last reviewed commit
       pull-requests: write # inline review comments
-      id-token: write # OIDC for the Infisical secret fetch
-    # Same-owner reusable workflow; @main is the design, edits there reach
-    # every repo without a sync run. zizmor only honors the trailing ignore.
-    uses: rubas/ci/.github/workflows/claude-review.yml@main # zizmor: ignore[unpinned-uses]
+      id-token: write # OIDC for Claude app token + Infisical secret fetch
+    env:
+      # --max-turns is a runaway backstop, not the cost guard; `timeout-minutes`
+      # above is. Agent mode spends no turn on a checklist update, so this only
+      # catches a loop.
+      CLAUDE_ARGS: |
+        --model claude-opus-5
+        --effort high
+        --max-turns 100
+        --allowedTools "mcp__github_inline_comment__create_inline_comment,Bash(gh api --paginate repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(git log:*),Bash(git blame:*),Bash(git diff:*)"
+    steps:
+      - name: Checkout repository
+        # claude-code-action fetches the PR branch through this authenticated
+        # remote. The token has contents read access and no artifact upload uses it.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1 # zizmor: ignore[artipacked]
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Find the last reviewed commit
+        # The last green run of this workflow on this branch reviewed its head
+        # commit, so everything after it is what this round has to look at. Three
+        # cases emit nothing and let the review fall back to the whole PR: a
+        # rebase or a jj rewrite left that commit off the branch, the run repeats
+        # a commit that was already reviewed, or the range pulls in a merge of the
+        # base branch, whose upstream code is not this PR's work.
+        id: since
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          sha=$(curl -fsSL -G \
+            "$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/actions/workflows/claude-code-review.yml/runs" \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            --data-urlencode "branch=$BRANCH" \
+            --data-urlencode "status=success" \
+            --data-urlencode "per_page=1" \
+            | jq -r '.workflow_runs[0].head_sha // empty' || true)
+
+          if [ -n "$sha" ] && [ "$sha" != "$HEAD_SHA" ] &&
+            git cat-file -e "$sha^{commit}" 2>/dev/null &&
+            git merge-base --is-ancestor "$sha" "$HEAD_SHA" &&
+            [ -z "$(git rev-list --min-parents=2 "$sha..$HEAD_SHA")" ]; then
+            echo "since=$sha" >>"$GITHUB_OUTPUT"
+          else
+            echo "no reviewable range, the whole PR gets reviewed"
+          fi
+
+      - name: Fetch Claude OAuth token
+        id: claude-oauth
+        env:
+          # Identifiers only. The runner holds no Infisical client secret.
+          INFISICAL_API_URL: https://secrets.rubas.dev/api
+          INFISICAL_PROJECT_ID: fcfa5858-98ac-4d17-9bc6-f6729d081a84
+          INFISICAL_IDENTITY_ID: 46677de3-7978-42b6-89eb-a06056b5face
+          INFISICAL_AUDIENCE: https://github.com/${{ github.repository_owner }}
+        run: |
+          set -euo pipefail
+
+          # Mint a GitHub OIDC JWT and exchange it for a short-lived Infisical
+          # token using the identity bound to this repository owner.
+          JWT=$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$INFISICAL_AUDIENCE" | jq -r '.value')
+          if [[ -z "$JWT" || "$JWT" == "null" ]]; then
+            echo "::error::Failed to mint GitHub OIDC token"
+            exit 1
+          fi
+
+          TOKEN=$(curl -fsSL -X POST "$INFISICAL_API_URL/v1/auth/oidc-auth/login" \
+            -H 'Content-Type: application/json' \
+            --data "$(jq -nc --arg id "$INFISICAL_IDENTITY_ID" --arg jwt "$JWT" '{identityId: $id, jwt: $jwt}')" \
+            | jq -r '.accessToken')
+          if [[ -z "$TOKEN" || "$TOKEN" == "null" ]]; then
+            echo "::error::Infisical OIDC login failed"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+
+          # One shared path for the whole fleet, so adding an account is a single
+          # write. Every CLAUDE_CODE_OAUTH_TOKEN* key there is one Claude
+          # account; sorting by key gives the same list on every runner.
+          SECRET_PATH="/claude-review"
+          SECRETS=$(curl -fsSL -G "$INFISICAL_API_URL/v3/secrets/raw" \
+            --data-urlencode "workspaceId=$INFISICAL_PROJECT_ID" \
+            --data-urlencode "environment=production" \
+            --data-urlencode "secretPath=$SECRET_PATH" \
+            -H "Authorization: Bearer $TOKEN")
+          mapfile -t CLAUDE_TOKENS < <(jq -r '
+            [ .secrets[]?
+              | select(.secretKey | test("^CLAUDE_CODE_OAUTH_TOKEN(_[0-9]+)?$"))
+              | select(.secretValue != null and .secretValue != "") ]
+            | sort_by(.secretKey) | .[].secretValue' <<<"$SECRETS")
+          COUNT=${#CLAUDE_TOKENS[@]}
+          if [[ "$COUNT" -eq 0 ]]; then
+            echo "::error::no CLAUDE_CODE_OAUTH_TOKEN* at Infisical path $SECRET_PATH (env production)"
+            exit 1
+          fi
+
+          # Start at a different account per run so one account does not absorb
+          # every review and hit its limit first. Three attempt steps follow, so
+          # a fourth account only widens the rotation.
+          ATTEMPTS=$(( COUNT < 3 ? COUNT : 3 ))
+          for i in $(seq 0 $((ATTEMPTS - 1))); do
+            CLAUDE_TOKEN="${CLAUDE_TOKENS[$(( (GITHUB_RUN_NUMBER + i) % COUNT ))]}"
+            echo "::add-mask::$CLAUDE_TOKEN"
+            echo "token_$((i + 1))=$CLAUDE_TOKEN" >>"$GITHUB_OUTPUT"
+          done
+          echo "$COUNT Claude account(s), $ATTEMPTS attempt(s) this run"
+
+      - name: Build the review prompt
+        # One copy of the prompt for every attempt below. It has to be a step
+        # output and not job-level env, because it names steps.since. The four
+        # variable values arrive through env and printf, so the run block holds
+        # no expansion and the prompt body stays a quoted heredoc.
+        id: prompt
+        env:
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+          SINCE: ${{ steps.since.outputs.since }}
+        run: |
+          set -euo pipefail
+          {
+            echo 'text<<REVIEW_PROMPT_EOF'
+            printf 'REPO: %s\nPR: %s\nHEAD: %s\nSINCE: %s\n\n' \
+              "$REPO" "$PR" "$HEAD" "$SINCE"
+            cat <<'PROMPT'
+          Cross-check the selected changes once. Post only findings that require
+          a change before merge. The local Babysit playbook owns gates and the
+          full review.
+
+          SINCE holds a commit: review `git diff <SINCE> <HEAD>`. SINCE is empty:
+          review `gh pr diff <PR>`. The selected diff is the reviewed artifact.
+          The PR title and body supply intent. Unchanged code supplies evidence.
+
+          Read the root AGENTS.md and any AGENTS.md under a changed directory.
+          Read DESIGN.md or WRITING.md when the selected diff changes that
+          surface. Use `git log` or `git blame` when intent remains unclear.
+          Never run a build, test, linter, formatter, or type check. CI owns them.
+
+          Review correctness, security, data integrity, state and ordering,
+          boundaries and contracts, required migrations, user recovery, and
+          tests for changed behaviour.
+
+          Use one proof test for every finding. All of these statements must hold:
+          - The selected diff introduced the issue.
+          - The current branch proves the issue.
+          - The issue qualifies under one of the cases below.
+          - The finding anchors to a line in the selected diff.
+          Drop the finding when any statement is unproven.
+
+          A defect qualifies when a reachable trigger causes wrong behaviour, a
+          security or data risk, a broken contract, or a wrong required action. A
+          test gap qualifies when it names the changed behaviour and the regression
+          that existing tests cannot catch. An AGENTS.md violation qualifies when
+          it quotes the loaded rule that the changed line breaks. Changed prose
+          qualifies when it directs a reader or model to the wrong action or
+          removes information required to act. A cleanup qualifies when the
+          selected diff duplicates a named existing unit or adds an unnecessary
+          comment, paragraph, or section that can be deleted in full.
+
+          Read existing inline comments with
+          `gh api --paginate repos/<REPO>/pulls/<PR>/comments`. Keep each defect in
+          one place.
+
+          Post each surviving finding on its changed line with
+          `mcp__github_inline_comment__create_inline_comment`. Open with `[P1]`
+          for correctness, security, data loss, or a broken contract, `[P2]` for
+          other merge-blocking behaviour, and `[P3]` for cleanup. State the
+          failure, its trigger, and the fix. Add a suggestion block when the exact
+          replacement for the anchored line is known. Inline findings are the
+          complete output. Post no summary or top-level comment. A clean review
+          posts nothing. Never approve or request changes.
+          PROMPT
+            echo 'REVIEW_PROMPT_EOF'
+          } >>"$GITHUB_OUTPUT"
+
+      # Up to three attempts, one Claude account each, in the rotated order the
+      # fetch step wrote. A dead, revoked or rate-limited account fails in
+      # seconds, so the fallback costs a run only when it is needed.
+      #
+      # No track_progress. It forces tag mode, which posts a tracking comment
+      # per run and injects the whole PR thread into the prompt every round, so
+      # each round re-reads settled findings and answers them again. Agent mode
+      # makes the prompt the only instruction; the inline-comment MCP server
+      # comes from the allowed tools, not from the mode.
+      - name: Claude review (account 1)
+        id: review-1
+        uses: anthropics/claude-code-action@c81e3bc69d1b18badbb63ba39581218f02421678 # v1.0.201
+        continue-on-error: true
+        timeout-minutes: 15
+        with:
+          # Subscription OAuth keeps this work off metered API credits.
+          claude_code_oauth_token: ${{ steps.claude-oauth.outputs.token_1 }}
+          prompt: ${{ steps.prompt.outputs.text }}
+          claude_args: ${{ env.CLAUDE_ARGS }}
+
+      - name: Claude review (account 2)
+        id: review-2
+        if: steps.review-1.outcome == 'failure' && steps.claude-oauth.outputs.token_2 != ''
+        uses: anthropics/claude-code-action@c81e3bc69d1b18badbb63ba39581218f02421678 # v1.0.201
+        continue-on-error: true
+        timeout-minutes: 15
+        with:
+          claude_code_oauth_token: ${{ steps.claude-oauth.outputs.token_2 }}
+          prompt: ${{ steps.prompt.outputs.text }}
+          claude_args: ${{ env.CLAUDE_ARGS }}
+
+      - name: Claude review (account 3)
+        id: review-3
+        if: steps.review-1.outcome == 'failure' && steps.review-2.outcome != 'success' && steps.claude-oauth.outputs.token_3 != ''
+        uses: anthropics/claude-code-action@c81e3bc69d1b18badbb63ba39581218f02421678 # v1.0.201
+        continue-on-error: true
+        timeout-minutes: 15
+        with:
+          claude_code_oauth_token: ${{ steps.claude-oauth.outputs.token_3 }}
+          prompt: ${{ steps.prompt.outputs.text }}
+          claude_args: ${{ env.CLAUDE_ARGS }}
+
+      - name: Fail when no account reviewed
+        # The steps above swallow their own failure, so the job needs this to
+        # stay red. A red run also keeps the next run's SINCE at the last commit
+        # that a review really covered.
+        if: steps.review-1.outcome == 'failure' && steps.review-2.outcome != 'success' && steps.review-3.outcome != 'success'
+        run: |
+          echo "::error::Claude review failed on every available account"
+          exit 1
