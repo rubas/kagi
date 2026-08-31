@@ -28,7 +28,10 @@ jobs:
     if: >-
       github.event.pull_request.draft == false &&
       github.event.pull_request.head.repo.full_name == github.repository
-    runs-on: ubuntu-latest
+    # The incus pool, not ubuntu-latest: secrets.rubas.dev resolves to a
+    # private address, so only these runners reach Infisical. The guard above
+    # keeps fork PRs off them.
+    runs-on: incus
     # Each attempt below caps itself at 15 minutes. A failed account fails in
     # seconds, so this only bounds a pathological run.
     timeout-minutes: 30
