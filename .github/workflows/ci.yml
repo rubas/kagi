@@ -29,6 +29,7 @@ jobs:
         # zizmor: ignore[superfluous-actions] toolchain pinned deliberately
         with:
           toolchain: stable
+          components: rustfmt, clippy
       - name: Cache paths
         run: |
           repo="${GITHUB_REPOSITORY//\//__}"
