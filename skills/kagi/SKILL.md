@@ -1,6 +1,6 @@
 ---
 name: kagi
-description: "Use when you need web search, places, or a summary of a URL."
+description: "Use when you need ranked web hits with a region, lens, or site filter, a place or address, or a summary of one URL. For a synthesized answer use the search skill."
 allowed-tools: Bash
 argument-hint: "<query or url>"
 ---
@@ -24,16 +24,11 @@ lists every flag.
 Search is iterative, not one-shot. Present results directly; do not chain
 search into summarize unless the user asks.
 
-- Build the query from the words the target page would use, not from the
-  question. `postgres 17 vacuum default` beats `what changed in vacuum`.
-- Start specific with `--limit 5`. One precise query beats three vague ones.
-- Read the snippets before you fetch anything; they often answer already.
 - No hit: change one axis per retry. Synonyms, fewer terms, another lens, a
   wider time window. After two failed retries, say the open web likely does
   not have it.
 - Fresh topics get `--sort recency` with `--time day` or `week`. Evergreen
   topics get no time filter; recency buries the canonical page.
-- Independent questions run as parallel `kagi-search` calls.
 - A promising hit that needs more than its snippet goes to `kagi-summarize`,
   not to a raw fetch.
 - Every fact you take from a result keeps its URL.
