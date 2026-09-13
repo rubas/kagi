@@ -22,8 +22,9 @@ lists every flag.
 ## Search
 
 Search is iterative, not one-shot. For ranked-link requests, present the
-hits directly. For source-backed answers, read promising sources with
-`kagi-summarize` when snippets are insufficient; no extra permission is needed.
+hits directly. When using these binaries for a source-backed answer, read
+promising sources with `kagi-summarize` when snippets are insufficient;
+no extra permission is needed.
 
 - No hit: change one axis per retry. Synonyms, fewer terms, another lens, a
   wider time window. After two failed retries, report what you searched and
