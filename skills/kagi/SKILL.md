@@ -21,12 +21,13 @@ lists every flag.
 
 ## Search
 
-Search is iterative, not one-shot. Present results directly; do not chain
-search into summarize unless the user asks.
+Search is iterative, not one-shot. For ranked-link requests, present the
+hits directly. For source-backed answers, read promising sources with
+`kagi-summarize` when snippets are insufficient; no extra permission is needed.
 
 - No hit: change one axis per retry. Synonyms, fewer terms, another lens, a
-  wider time window. After two failed retries, say the open web likely does
-  not have it.
+  wider time window. After two failed retries, report what you searched and
+  what remains unknown. Do not infer absence from the whole web.
 - Fresh topics get `--sort recency` with `--time day` or `week`. Evergreen
   topics get no time filter; recency buries the canonical page.
 - A promising hit that needs more than its snippet goes to `kagi-summarize`,
@@ -60,8 +61,9 @@ kagi-maps 'bookstore near bern' --sort rating --json
 ## Summarize
 
 `--type summary` (default) for an overview, `--type takeaway` for bullet
-points, `--lang DE` for another language. Do not search for URLs to
-summarize unless the user asks.
+points, `--lang DE` for another language. For a summary of a supplied URL,
+summarize that URL directly. Search for sources when the requested answer
+needs them.
 
 ```bash
 kagi-summarize 'https://example.com/article' --type takeaway
