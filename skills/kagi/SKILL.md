@@ -31,7 +31,8 @@ extra permission is needed.
 - Fresh topics get `--sort recency` with `--time day` or `week`. Evergreen
   topics get no time filter; recency buries the canonical page.
 - Fetch the source page directly when a snippet is not enough to verify a
-  claim. Use `kagi-summarize` only for a requested URL summary.
+  claim. `kagi-summarize` stays for a requested URL summary and for a page
+  too large to read directly.
 - Every fact you take from a result keeps its URL.
 
 | User intent               | Options                                      |
