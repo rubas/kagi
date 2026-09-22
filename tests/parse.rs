@@ -92,6 +92,20 @@ fn rejects_unrecognized_page_instead_of_reporting_zero_results() {
 }
 
 #[test]
+fn rejects_result_cards_it_cannot_read_instead_of_reporting_zero_results() {
+    let html = include_str!("fixtures/search/unreadable.html");
+    let error = parse_search_results(html, 10).unwrap_err();
+    assert!(error.contains("unrecognized Kagi response page"));
+}
+
+#[test]
+fn limit_zero_returns_empty_results_for_a_valid_page() {
+    let html = include_str!("fixtures/search/basic.html");
+    let output = parse_search_results(html, 0).unwrap();
+    assert!(output.results.is_empty());
+}
+
+#[test]
 fn parses_maps_results_fixture() {
     let body = include_bytes!("fixtures/maps/search.json");
     let output = parse_maps_results(body, 1).unwrap();
