@@ -157,16 +157,19 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
         // error for a page without the search shell.
         if !has_search_shell {
             let lower = html.to_lowercase();
-            if lower.contains("cf-challenge")
+            return Err(if lower.contains("cf-challenge")
                 || lower.contains("captcha")
                 || lower.contains("challenge-platform")
                 || lower.contains("just a moment")
             {
-                return Err("Blocked by CAPTCHA/challenge".into());
+                "Blocked by CAPTCHA/challenge"
+            } else {
+                "unrecognized Kagi response page (markup change or block page)"
             }
+            .into());
         }
 
-        if visited_card || !has_search_shell {
+        if visited_card {
             return Err("unrecognized Kagi response page (markup change or block page)".into());
         }
     }
