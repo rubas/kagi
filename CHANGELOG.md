@@ -5,6 +5,61 @@ All notable changes to this project are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.5.3] - 2026-09-23
+
+### Fixed
+
+- `kagi-maps` accepts a negative `--ll` or `--bbox` value as a separate
+  argument, for example `--ll -33.8688,151.2093`. Before, clap read the value
+  as an unknown flag (#27). A flag right after `--ll` or `--bbox` now counts as
+  its value, so `--ll --limit 5` fails as an invalid coordinate instead of a
+  missing value.
+- `kagi-search` reports `unrecognized Kagi response page` when it finds result
+  cards but can parse none of them. Before, it reported zero results (#28).
+- `kagi-search` no longer reports a CAPTCHA block for a normal search page
+  that contains the word captcha, for example a zero-result page for such a
+  query, or any such page with `--limit 0` (#29).
+
+### Changed
+
+- `clap` 4.6.7, and a lockfile refresh of the transitive tree.
+- The Nix build and the dev shell take rustc 1.98.1 from nixpkgs again.
+  `rust-overlay` is gone from `flake.nix` and `flake.lock`.
+- A failed platform build no longer publishes a partial GitHub release. The
+  tag stays without a release until a `workflow_dispatch` run recovers it.
+
+## [0.5.2] - 2026-09-21
+
+### Changed
+
+- The `kagi` skill description narrows to ranked hits with a region, lens, or
+  site filter, places, and URL summaries. It points to the search skill for a
+  synthesized answer.
+- The `kagi` skill reads a source page directly. It uses `kagi-summarize` only
+  when the user asks for a summary of a URL or the page is too large to read.
+  After two failed search retries, it reports the coverage and the open
+  questions.
+- Release binaries build with thin LTO, 16 codegen units, and the default
+  optimization level instead of fat LTO, one codegen unit, and
+  `opt-level = "z"`.
+
+## [0.5.1] - 2026-08-29
+
+0.5.0 was never published: its release build still packaged the three old
+skill directories. 0.5.1 ships the same change.
+
+### Breaking
+
+- One `kagi` skill replaces the `kagi-search`, `kagi-maps`, and
+  `kagi-summarize` skills. `install.sh`, the Nix package, and the Home Manager
+  module install only `kagi`. The installer removes the three old skill
+  directories. Update any reference to the old skill names.
+
+### Changed
+
+- The skill descriptions say when to use the skill. The README no longer
+  repeats the option lists; `--help` is the reference.
+
 ## [0.4.1] - 2026-08-28
 
 ### Changed
