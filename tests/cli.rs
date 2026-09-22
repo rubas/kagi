@@ -183,6 +183,41 @@ fn maps_accepts_antimeridian_bbox() {
 }
 
 #[test]
+fn maps_accepts_negative_latitude_as_separate_value() {
+    let temp_home = temp_dir("maps-negative-ll");
+
+    maps_bin()
+        .env_remove("KAGI_SESSION_TOKEN")
+        .env("XDG_CONFIG_HOME", temp_home.join("xdg-config"))
+        .args(["coffee", "--ll", "-33.8688,151.2093"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("missing session token"));
+}
+
+#[test]
+fn maps_accepts_negative_west_bound_as_separate_value() {
+    let temp_home = temp_dir("maps-negative-bbox");
+
+    maps_bin()
+        .env_remove("KAGI_SESSION_TOKEN")
+        .env("XDG_CONFIG_HOME", temp_home.join("xdg-config"))
+        .args(["coffee", "--bbox", "-74,40,-73,41"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("missing session token"));
+}
+
+#[test]
+fn maps_rejects_out_of_range_negative_latitude_as_separate_value() {
+    maps_bin()
+        .args(["coffee", "--ll", "-95,0"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains("latitude -90..90"));
+}
+
+#[test]
 fn maps_rejects_degenerate_bbox() {
     maps_bin()
         .args(["coffee", "--bbox", "10,0,10,5"])

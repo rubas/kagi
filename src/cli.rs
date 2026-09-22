@@ -209,10 +209,11 @@ pub struct MapsArgs {
     #[arg(long, default_value_t = 10)]
     pub limit: usize,
 
-    #[arg(long, value_name = "LAT,LON", value_parser = coordinate_parser())]
+    // The value can start with `-` (a southern latitude or western bound).
+    #[arg(long, value_name = "LAT,LON", allow_hyphen_values = true, value_parser = coordinate_parser())]
     pub ll: Option<String>,
 
-    #[arg(long, value_name = "WEST,SOUTH,EAST,NORTH", value_parser = bbox_parser())]
+    #[arg(long, value_name = "WEST,SOUTH,EAST,NORTH", allow_hyphen_values = true, value_parser = bbox_parser())]
     pub bbox: Option<String>,
 
     #[arg(long = "zoom", value_name = "N")]
