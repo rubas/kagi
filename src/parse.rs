@@ -144,15 +144,6 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
     // and a markup redesign drops the shell or leaves cards the loop cannot
     // read. Silently reporting "no results" for those misleads callers.
     if results.is_empty() {
-        let lower = html.to_lowercase();
-        if lower.contains("cf-challenge")
-            || lower.contains("captcha")
-            || lower.contains("challenge-platform")
-            || lower.contains("just a moment")
-        {
-            return Err("Blocked by CAPTCHA/challenge".into());
-        }
-
         let has_search_shell = ["._0_main-search-results", ".footer-search-results"]
             .iter()
             .any(|shell_selector| {
@@ -160,6 +151,21 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
                     .ok()
                     .is_some_and(|selector| doc.select(&selector).next().is_some())
             });
+
+        // Kagi echoes the query into the title, the search inputs, and the lens
+        // links, so a result page can contain these words. They only name the
+        // error for a page without the search shell.
+        if !has_search_shell {
+            let lower = html.to_lowercase();
+            if lower.contains("cf-challenge")
+                || lower.contains("captcha")
+                || lower.contains("challenge-platform")
+                || lower.contains("just a moment")
+            {
+                return Err("Blocked by CAPTCHA/challenge".into());
+            }
+        }
+
         if visited_card || !has_search_shell {
             return Err("unrecognized Kagi response page (markup change or block page)".into());
         }
