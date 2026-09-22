@@ -80,6 +80,7 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
     let doc = Html::parse_document(html);
 
     let mut results = Vec::new();
+    let mut visited_card = false;
 
     // Standard and grouped results interleave on real pages, so collect both in
     // one document-order pass; separate passes would push grouped rows behind
@@ -93,6 +94,7 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
             if results.len() >= limit {
                 break;
             }
+            visited_card = true;
 
             let is_grouped = element.value().classes().any(|class| class == "__srgi");
             let title_selector = if is_grouped {
@@ -137,19 +139,11 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
     }
 
     // Zero results is only trustworthy on a recognized result page. A
-    // genuine zero-result page still renders the search shell; a CAPTCHA
-    // interstitial, the kagi.com/welcome page, or a markup redesign does
-    // not, and silently reporting "no results" for those misleads callers.
+    // genuine zero-result page still renders the search shell and no result
+    // cards. A CAPTCHA interstitial or the kagi.com/welcome page has no shell,
+    // and a markup redesign drops the shell or leaves cards the loop cannot
+    // read. Silently reporting "no results" for those misleads callers.
     if results.is_empty() {
-        let lower = html.to_lowercase();
-        if lower.contains("cf-challenge")
-            || lower.contains("captcha")
-            || lower.contains("challenge-platform")
-            || lower.contains("just a moment")
-        {
-            return Err("Blocked by CAPTCHA/challenge".into());
-        }
-
         let has_search_shell = ["._0_main-search-results", ".footer-search-results"]
             .iter()
             .any(|shell_selector| {
@@ -157,7 +151,25 @@ pub fn parse_search_results(html: &str, limit: usize) -> Result<SearchOutput, St
                     .ok()
                     .is_some_and(|selector| doc.select(&selector).next().is_some())
             });
+
+        // Kagi echoes the query into the title, the search inputs, and the lens
+        // links, so a result page can contain these words. They only name the
+        // error for a page without the search shell.
         if !has_search_shell {
+            let lower = html.to_lowercase();
+            return Err(if lower.contains("cf-challenge")
+                || lower.contains("captcha")
+                || lower.contains("challenge-platform")
+                || lower.contains("just a moment")
+            {
+                "Blocked by CAPTCHA/challenge"
+            } else {
+                "unrecognized Kagi response page (markup change or block page)"
+            }
+            .into());
+        }
+
+        if visited_card {
             return Err("unrecognized Kagi response page (markup change or block page)".into());
         }
     }
