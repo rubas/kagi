@@ -45,9 +45,11 @@ Each binary ships a companion agent skill from `skills/`.
 - `--sort` means two different things. `kagi-search` sends it to Kagi as the
   `order` parameter. `kagi-maps` fetches the whole page, sorts locally, then
   truncates to `--limit`.
-- A version bump is the release trigger: when a commit on `main` changes
-  `version` in `Cargo.toml`, `release.yml` tags `v<version>` and publishes. No
-  bump, no release. Push a tag by hand only to recover a failed run, through
+- A version bump is the release trigger: on each push to `main`, `release.yml`
+  reads `version` from `Cargo.toml`. When the tag `v<version>` does not exist,
+  it tags and publishes. The tag decides, not the parent commit, so a
+  multi-commit push or a cancelled run does not lose a release. A tag deleted by
+  hand comes back on the next push. Recover a failed build or release through
   `workflow_dispatch` on `release.yml`.
 
 ## Pitfalls

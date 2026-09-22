@@ -230,7 +230,7 @@ jobs:
       # comes from the allowed tools, not from the mode.
       - name: Claude review (account 1)
         id: review-1
-        uses: anthropics/claude-code-action@c81e3bc69d1b18badbb63ba39581218f02421678 # v1.0.201
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         continue-on-error: true
         timeout-minutes: 15
         with:
@@ -242,7 +242,7 @@ jobs:
       - name: Claude review (account 2)
         id: review-2
         if: steps.review-1.outcome == 'failure' && steps.claude-oauth.outputs.token_2 != ''
-        uses: anthropics/claude-code-action@c81e3bc69d1b18badbb63ba39581218f02421678 # v1.0.201
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         continue-on-error: true
         timeout-minutes: 15
         with:
@@ -253,7 +253,7 @@ jobs:
       - name: Claude review (account 3)
         id: review-3
         if: steps.review-1.outcome == 'failure' && steps.review-2.outcome != 'success' && steps.claude-oauth.outputs.token_3 != ''
-        uses: anthropics/claude-code-action@c81e3bc69d1b18badbb63ba39581218f02421678 # v1.0.201
+        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
         continue-on-error: true
         timeout-minutes: 15
         with:
