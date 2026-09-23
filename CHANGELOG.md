@@ -14,8 +14,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
   It reads the tag from the web redirect of `releases/latest` and needs no
   `gh`. A pinned tag, `sh -s -- v0.5.4`, still works.
 - `install.sh --check` prints the installed and the target version and
-  installs nothing. It exits 0 when the install is current and 100 when an
-  update is available.
+  installs nothing. It exits 0 when the installed version matches the target
+  and 100 when kagi is not installed or has a different version.
 - `install.sh --force` installs again when the version already matches.
 - The release attests `install.sh`. Check it with
   `gh attestation verify install.sh --repo rubas/kagi` before you run it.
@@ -36,8 +36,8 @@ and this project follows [Semantic Versioning](https://semver.org/).
   time.
 - An agent without a config directory gets no link. Before, the installer
   created `~/.claude/skills` and `~/.gemini/antigravity-cli/skills` in any
-  case. An agent set up after the install gets its link with the next release
-  or with `--force`.
+  case. The next release or `--force` links an agent set up after the install
+  and restores a skill or link removed after it.
 - The installer downloads and verifies only the platform archive, which
   contains the skill. It no longer downloads `kagi-skills.tar.gz`. The release
   still publishes it.
