@@ -264,6 +264,18 @@ jobs:
           kagi_install "$TAG" | grep -Fx "kagi ${TAG#v} is current"
           test "$before" = "$(snapshot)"
           kagi_install --check "$TAG"
+
+          # A symlinked config root gets the link realpath gives. A skills dir
+          # that links to the source dir keeps the real skill.
+          home="$(mktemp -d)"
+          mkdir -p "$home/dots/claude" "$home/.agents/skills" "$home/.codex"
+          ln -s dots/claude "$home/.claude"
+          ln -s ../.agents/skills "$home/.codex/skills"
+          kagi_install "$TAG"
+          test "$(readlink "$home/.claude/skills/kagi")" = ../../../.agents/skills/kagi
+          test -f "$home/.claude/skills/kagi/SKILL.md"
+          test ! -L "$home/.agents/skills/kagi"
+          test -f "$home/.codex/skills/kagi/SKILL.md"
       - name: Write release notes
         shell: bash
         env:
