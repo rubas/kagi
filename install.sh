@@ -43,14 +43,8 @@ os="$(uname -s)"
 arch="$(uname -m)"
 
 case "$os/$arch" in
-Linux/x86_64)
-  archive="kagi-linux-x86_64.tar.gz"
-  root="kagi-linux-x86_64"
-  ;;
-Darwin/arm64)
-  archive="kagi-macos-aarch64.tar.gz"
-  root="kagi-macos-aarch64"
-  ;;
+Linux/x86_64) root="kagi-linux-x86_64" ;;
+Darwin/arm64) root="kagi-macos-aarch64" ;;
 *)
   echo "unsupported platform: $os/$arch" >&2
   exit 1
@@ -95,13 +89,11 @@ tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
 trap 'exit 1' INT TERM
 
-curl -fsSL "${base_url}/${archive}" -o "$tmp/$archive"
-curl -fsSL "${base_url}/kagi-skills.tar.gz" -o "$tmp/kagi-skills.tar.gz"
+curl -fsSL "${base_url}/${root}.tar.gz" -o "$tmp/${root}.tar.gz"
 
 if [ "$verify" != "skip" ]; then
   if command -v gh >/dev/null 2>&1; then
-    gh attestation verify "$tmp/$archive" --repo "$repo"
-    gh attestation verify "$tmp/kagi-skills.tar.gz" --repo "$repo"
+    gh attestation verify "$tmp/${root}.tar.gz" --repo "$repo"
   elif [ "$verify" = "require" ]; then
     echo "KAGI_INSTALL_VERIFY=require but the gh CLI is not available to verify attestations" >&2
     exit 1
@@ -111,43 +103,43 @@ if [ "$verify" != "skip" ]; then
   fi
 fi
 
-tar -xzf "$tmp/$archive" -C "$tmp"
-tar -xzf "$tmp/kagi-skills.tar.gz" -C "$tmp"
+tar -xzf "$tmp/${root}.tar.gz" -C "$tmp"
 
-# Fail before touching any installed files if either archive's layout drifted.
-for required in \
-  "$tmp/$root/bin/kagi-search" \
-  "$tmp/$root/bin/kagi-maps" \
-  "$tmp/$root/bin/kagi-summarize" \
-  "$tmp/kagi-skills/kagi/SKILL.md"; do
-  if [ ! -f "$required" ]; then
-    echo "unexpected archive layout: missing ${required#"$tmp"/}" >&2
+# Fail before touching any installed files if the archive layout drifted.
+for file in bin/kagi-search bin/kagi-maps bin/kagi-summarize skills/kagi/SKILL.md; do
+  if [ ! -f "$tmp/$root/$file" ]; then
+    echo "unexpected archive layout: missing $root/$file" >&2
     exit 1
   fi
 done
 
-agents_root="${HOME}/.agents/skills"
-claude_root="${HOME}/.claude/skills"
-gemini_root="${HOME}/.gemini/antigravity-cli/skills"
+install -d "$bin_dir"
+for bin in kagi-search kagi-maps kagi-summarize; do
+  install -m 755 "$tmp/$root/bin/$bin" "$bin_dir/$bin"
+done
 
-install -d "$bin_dir" "$agents_root" "$claude_root" "$gemini_root"
+# The per-binary skill dirs of v0.4 and earlier are legacy; remove them.
+for dir in .agents/skills .claude/skills .codex/skills .gemini/antigravity-cli/skills .pi/agent/skills; do
+  rm -rf "$HOME/$dir/kagi-search" "$HOME/$dir/kagi-maps" "$HOME/$dir/kagi-summarize"
+done
 
-# The three per-binary skill dirs of v0.4 and earlier are legacy; remove them.
-rm -rf \
-  "${agents_root}/kagi" "${claude_root}/kagi" "${gemini_root}/kagi" \
-  "${agents_root}/kagi-search" "${agents_root}/kagi-maps" "${agents_root}/kagi-summarize" \
-  "${claude_root}/kagi-search" "${claude_root}/kagi-maps" "${claude_root}/kagi-summarize" \
-  "${gemini_root}/kagi-search" "${gemini_root}/kagi-maps" "${gemini_root}/kagi-summarize"
+# The skill has one source, ~/.agents/skills/kagi. Each agent whose config root
+# exists gets a relative link to it. The target is the one the dotfiles apply
+# computes with realpath -m --relative-to, so the two never fight.
+skill="$HOME/.agents/skills/kagi"
+rm -rf "$skill"
+install -d "$skill"
+install -m 644 "$tmp/$root/skills/kagi/SKILL.md" "$skill/SKILL.md"
+echo "installed kagi ${target}: kagi-search, kagi-maps, and kagi-summarize in ${bin_dir}, the skill in ${skill}"
 
-install -d "${agents_root}/kagi" "${claude_root}/kagi" "${gemini_root}/kagi"
-
-install -m 755 "$tmp/$root/bin/kagi-search" "${bin_dir}/kagi-search"
-install -m 755 "$tmp/$root/bin/kagi-maps" "${bin_dir}/kagi-maps"
-install -m 755 "$tmp/$root/bin/kagi-summarize" "${bin_dir}/kagi-summarize"
-
-install -m 644 "$tmp/kagi-skills/kagi/SKILL.md" "${agents_root}/kagi/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi/SKILL.md" "${claude_root}/kagi/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi/SKILL.md" "${gemini_root}/kagi/SKILL.md"
-
-echo "installed kagi-search, kagi-maps and kagi-summarize to ${bin_dir}"
-echo "installed skills to ${agents_root}, ${claude_root} and ${gemini_root}"
+link() { # <agent config root> <link target from its skills dir>
+  [ -d "$HOME/$1" ] || return 0
+  install -d "$HOME/$1/skills"
+  rm -rf "$HOME/$1/skills/kagi"
+  ln -s "$2" "$HOME/$1/skills/kagi"
+  echo "linked $HOME/$1/skills/kagi -> $2"
+}
+link .claude ../../.agents/skills/kagi
+link .codex ../../.agents/skills/kagi
+link .gemini/antigravity-cli ../../../.agents/skills/kagi
+link .pi/agent ../../../.agents/skills/kagi
