@@ -81,8 +81,8 @@ else
   if $check; then exit 100; fi
 fi
 
-# KAGI_INSTALL_BASE_URL lets the release workflow smoke-test this script
-# against just-built local artifacts (file:// URL) before publishing.
+# KAGI_INSTALL_BASE_URL points at local archives (file:// URL): the release
+# smoke test, task install, and a host that verified the archives itself.
 base_url="${KAGI_INSTALL_BASE_URL:-https://github.com/${repo}/releases/download/${version}}"
 
 tmp="$(mktemp -d)"
