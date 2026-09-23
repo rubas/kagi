@@ -31,7 +31,10 @@ whose configuration directory exists:
 | `~/.gemini/antigravity-cli` | `~/.gemini/antigravity-cli/skills/kagi` -> `../../../.agents/skills/kagi` |
 | `~/.pi/agent`               | `~/.pi/agent/skills/kagi` -> `../../../.agents/skills/kagi`               |
 
-A link replaces a skill directory that an older installer copied there.
+A link replaces a skill directory that an older installer copied there. When a configuration
+directory or its `skills` directory is a symlink, the link target is the relative path between the
+resolved directories, the same path `realpath --relative-to` gives. A `skills` directory that links
+to `~/.agents/skills` already holds the skill and gets no link.
 
 Run the same command again to update. When `~/.local/bin/kagi-search --version` already shows the
 target version, the installer says so and changes nothing.
@@ -57,9 +60,9 @@ verifiable install path, prefer the Nix flake below: `flake.lock` pins every inp
 The release also attests `install.sh`. To verify the installer before you run it:
 
 ```bash
-curl -fsSLO https://github.com/rubas/kagi/releases/latest/download/install.sh
-gh attestation verify install.sh --repo rubas/kagi
-KAGI_INSTALL_VERIFY=require sh install.sh
+curl -fsSLO https://github.com/rubas/kagi/releases/latest/download/install.sh &&
+  gh attestation verify install.sh --repo rubas/kagi &&
+  KAGI_INSTALL_VERIFY=require sh install.sh
 ```
 
 | Variable                | Effect                                                                                                                  |

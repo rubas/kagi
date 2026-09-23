@@ -48,9 +48,10 @@ Each binary ships a companion agent skill from `skills/`.
 - `install.sh` is the one installer. `task install` and the release smoke test
   run it on local archives. It installs the skill once to
   `~/.agents/skills/kagi` and links it into each agent's skill dir. The link
-  targets are the ones `realpath -m --relative-to` gives, the same links a
-  dotfiles fan-out from `~/.agents/skills` creates. Keep them byte-identical, or
-  the installer and the fan-out replace each other's links on every run.
+  targets are the ones `realpath -m --relative-to` gives between the physical
+  paths, the same links a dotfiles fan-out from `~/.agents/skills` creates.
+  Keep them byte-identical, or the installer and the fan-out replace each
+  other's links on every run.
 - A version bump is the release trigger: on each push to `main`, `release.yml`
   reads `version` from `Cargo.toml`. When the tag `v<version>` does not exist,
   it tags and publishes. The tag decides, not the parent commit, so a
