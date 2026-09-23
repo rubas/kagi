@@ -51,7 +51,8 @@ Each binary ships a companion agent skill from `skills/`.
   targets are the ones `realpath -m --relative-to` gives between the physical
   paths, the same links a dotfiles fan-out from `~/.agents/skills` creates.
   Keep them byte-identical, or the installer and the fan-out replace each
-  other's links on every run.
+  other's links on every run. `task install` packs the local build like a
+  release archive, so it runs only on the two release platforms.
 - A version bump is the release trigger: on each push to `main`, `release.yml`
   reads `version` from `Cargo.toml`. When the tag `v<version>` does not exist,
   it tags and publishes. The tag decides, not the parent commit, so a

@@ -113,7 +113,7 @@ tasks:
       - cargo build --release
 
   install:
-    desc: Install the local build with install.sh, in the same layout as a release
+    desc: Install the local build with install.sh, in the same layout as a release (Linux x86_64 and macOS aarch64 only)
     vars:
       ROOT: '{{if eq OS "darwin"}}kagi-macos-aarch64{{else}}kagi-linux-x86_64{{end}}'
     cmds:
