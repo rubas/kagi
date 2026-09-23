@@ -1,5 +1,7 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 fn search_bin() -> Command {
@@ -43,7 +45,24 @@ fn search_rejects_invalid_date() {
         .stderr(predicate::str::contains("expected YYYY-MM-DD"));
 }
 
-fn temp_dir(label: &str) -> std::path::PathBuf {
+/// A fresh directory under the system temp dir, removed on drop.
+struct TempDir(PathBuf);
+
+impl Deref for TempDir {
+    type Target = Path;
+
+    fn deref(&self) -> &Path {
+        &self.0
+    }
+}
+
+impl Drop for TempDir {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.0);
+    }
+}
+
+fn temp_dir(label: &str) -> TempDir {
     let dir = std::env::temp_dir().join(format!(
         "kagi-{label}-{}",
         SystemTime::now()
@@ -52,7 +71,7 @@ fn temp_dir(label: &str) -> std::path::PathBuf {
             .as_nanos()
     ));
     std::fs::create_dir_all(&dir).unwrap();
-    dir
+    TempDir(dir)
 }
 
 #[test]
@@ -93,8 +112,8 @@ fn search_ignores_relative_xdg_config_home() {
     search_bin()
         .env_remove("KAGI_SESSION_TOKEN")
         .env("XDG_CONFIG_HOME", "")
-        .env("HOME", &home)
-        .current_dir(&cwd)
+        .env("HOME", &*home)
+        .current_dir(&*cwd)
         .args(["rust"])
         .assert()
         .failure()
@@ -118,7 +137,7 @@ fn search_rejects_world_readable_token_file() {
     search_bin()
         .env_remove("KAGI_SESSION_TOKEN")
         .env_remove("XDG_CONFIG_HOME")
-        .env("HOME", &home)
+        .env("HOME", &*home)
         .args(["rust"])
         .assert()
         .failure()
