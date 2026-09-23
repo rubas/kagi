@@ -38,7 +38,7 @@
           craneLib = crane.mkLib pkgs;
           commonArgs = {
             pname = "kagi";
-            version = "0.5.3";
+            version = "0.5.4";
             # cleanSource, not crane's cleanCargoSource: postInstall installs the
             # skills/*/SKILL.md files from the build source, which a cargo-only
             # filter would drop.

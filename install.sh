@@ -6,7 +6,8 @@
 # Without a tag it installs the latest release. When the installed
 # kagi-search --version already matches, it says so and changes nothing;
 # --force installs anyway. --check installs nothing: it exits 0 when the
-# install is current and 100 when an update is available.
+# installed version matches the target and 100 when kagi is not installed or
+# has a different version.
 set -eu
 
 usage="usage: install.sh [--check] [--force] [<version-tag>]"

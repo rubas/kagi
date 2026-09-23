@@ -43,12 +43,13 @@ Put a release tag or an option after `sh -s --`:
 
 ```bash
 # Install a given release.
-curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- v0.5.3
+curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- v0.5.4
 # Show the installed and the latest version, and install nothing.
 curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- --check
 ```
 
-- `--check` exits 0 when the install is current and 100 when an update is available.
+- `--check` exits 0 when the installed version matches the target and 100 when kagi is not
+  installed or has a different version.
 - `--force` installs again when the version already matches.
 
 Supported platforms: Linux x86_64 and macOS aarch64.
