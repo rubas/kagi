@@ -113,33 +113,48 @@ for file in bin/kagi-search bin/kagi-maps bin/kagi-summarize skills/kagi/SKILL.m
   fi
 done
 
-install -d "$bin_dir"
-for bin in kagi-search kagi-maps kagi-summarize; do
-  install -m 755 "$tmp/$root/bin/$bin" "$bin_dir/$bin"
-done
-
 # The per-binary skill dirs of v0.4 and earlier are legacy; remove them.
 for dir in .agents/skills .claude/skills .codex/skills .gemini/antigravity-cli/skills .pi/agent/skills; do
   rm -rf "$HOME/$dir/kagi-search" "$HOME/$dir/kagi-maps" "$HOME/$dir/kagi-summarize"
 done
 
-# The skill has one source, ~/.agents/skills/kagi. Each agent whose config root
-# exists gets a relative link to it. The target is the one the dotfiles apply
-# computes with realpath -m --relative-to, so the two never fight.
+# The skill has one source, ~/.agents/skills/kagi.
 skill="$HOME/.agents/skills/kagi"
 rm -rf "$skill"
 install -d "$skill"
 install -m 644 "$tmp/$root/skills/kagi/SKILL.md" "$skill/SKILL.md"
-echo "installed kagi ${target}: kagi-search, kagi-maps, and kagi-summarize in ${bin_dir}, the skill in ${skill}"
+skill="$(cd "$skill" && pwd -P)"
 
-link() { # <agent config root> <link target from its skills dir>
+# Each agent whose config root exists gets a relative link to the skill. Like
+# the realpath -m --relative-to of a dotfiles fan-out, the target runs between
+# the physical paths, so it resolves through a symlinked config root and the
+# installer and the fan-out never replace each other's link.
+link() { # <agent config root>
   [ -d "$HOME/$1" ] || return 0
   install -d "$HOME/$1/skills"
-  rm -rf "$HOME/$1/skills/kagi"
-  ln -s "$2" "$HOME/$1/skills/kagi"
-  echo "linked $HOME/$1/skills/kagi -> $2"
+  dir="$(cd "$HOME/$1/skills" && pwd -P)"
+  # A skills dir that is the source dir already holds the skill.
+  [ "$dir/kagi" != "$skill" ] || return 0
+  base="$dir"
+  up=""
+  while :; do
+    case "$skill" in "$base"/*) break ;; esac
+    base="${base%/*}"
+    up="../$up"
+  done
+  rm -rf "$dir/kagi"
+  ln -s "$up${skill#"$base"/}" "$dir/kagi"
+  echo "linked $HOME/$1/skills/kagi -> $up${skill#"$base"/}"
 }
-link .claude ../../.agents/skills/kagi
-link .codex ../../.agents/skills/kagi
-link .gemini/antigravity-cli ../../../.agents/skills/kagi
-link .pi/agent ../../../.agents/skills/kagi
+link .claude
+link .codex
+link .gemini/antigravity-cli
+link .pi/agent
+
+# kagi-search goes last: its --version marks the install as current, so an
+# install that fails before it runs again in full.
+install -d "$bin_dir"
+for bin in kagi-maps kagi-summarize kagi-search; do
+  install -m 755 "$tmp/$root/bin/$bin" "$bin_dir/$bin"
+done
+echo "installed kagi ${target}: kagi-search, kagi-maps, and kagi-summarize in ${bin_dir}, the skill in ${skill}"
