@@ -45,6 +45,14 @@ Each binary ships a companion agent skill from `skills/`.
 - `--sort` means two different things. `kagi-search` sends it to Kagi as the
   `order` parameter. `kagi-maps` fetches the whole page, sorts locally, then
   truncates to `--limit`.
+- `install.sh` is the one installer. `task install` and the release smoke test
+  run it on local archives. It installs the skill once to
+  `~/.agents/skills/kagi` and links it into each agent's skill dir. The link
+  targets are the ones `realpath -m --relative-to` gives between the physical
+  paths, the same links a dotfiles fan-out from `~/.agents/skills` creates.
+  Keep them byte-identical, or the installer and the fan-out replace each
+  other's links on every run. `task install` packs the local build like a
+  release archive, so it runs only on the two release platforms.
 - A version bump is the release trigger: on each push to `main`, `release.yml`
   reads `version` from `Cargo.toml`. When the tag `v<version>` does not exist,
   it tags and publishes. The tag decides, not the parent commit, so a
@@ -57,7 +65,8 @@ Each binary ships a companion agent skill from `skills/`.
 - `flake.nix` repeats the package version as a literal. Bump it in the same
   commit as `Cargo.toml`, or `nix build` produces a package with the old
   version.
-- The README pins the installer URL to a release tag. Update it with the version
-  bump, or the documented install command points at the previous release.
+- `install.sh` runs under `sh` on Linux with GNU tools and on macOS with BSD
+  tools. Use POSIX sh and flags both sets have: no `realpath --relative-to`, no
+  `ln -T`.
 - `ci.yml` skips a pull request whose author is not the repository owner. A
   contributor PR shows no checks; that is the gate, not a broken run.

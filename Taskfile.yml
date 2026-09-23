@@ -113,25 +113,14 @@ tasks:
       - cargo build --release
 
   install:
-    desc: Install binaries to ~/.local/bin and skills to ~/.agents/skills and ~/.claude/skills
+    desc: Install the local build with install.sh, in the same layout as a release (Linux x86_64 and macOS aarch64 only)
+    vars:
+      ROOT: '{{if eq OS "darwin"}}kagi-macos-aarch64{{else}}kagi-linux-x86_64{{end}}'
     cmds:
       - cargo build --release
-      - |
-        install_root="${HOME}/.local/bin"
-        agents_root="${HOME}/.agents/skills"
-        claude_root="${HOME}/.claude/skills"
-
-        install -d "${install_root}" "${agents_root}" "${claude_root}"
-
-        rm -rf \
-          "${agents_root}/kagi" "${claude_root}/kagi" \
-          "${agents_root}/kagi-search" "${agents_root}/kagi-maps" "${agents_root}/kagi-summarize" \
-          "${claude_root}/kagi-search" "${claude_root}/kagi-maps" "${claude_root}/kagi-summarize"
-
-        install -d "${agents_root}/kagi" "${claude_root}/kagi"
-
-        install -m 755 target/release/kagi-search "${install_root}/kagi-search"
-        install -m 755 target/release/kagi-maps "${install_root}/kagi-maps"
-        install -m 755 target/release/kagi-summarize "${install_root}/kagi-summarize"
-        install -m 644 skills/kagi/SKILL.md "${agents_root}/kagi/SKILL.md"
-        install -m 644 skills/kagi/SKILL.md "${claude_root}/kagi/SKILL.md"
+      - rm -rf target/dist
+      - mkdir -p target/dist/{{.ROOT}}/bin target/dist/{{.ROOT}}/skills/kagi
+      - cp target/release/kagi-search target/release/kagi-maps target/release/kagi-summarize target/dist/{{.ROOT}}/bin/
+      - cp skills/kagi/SKILL.md target/dist/{{.ROOT}}/skills/kagi/
+      - tar -czf target/dist/{{.ROOT}}.tar.gz -C target/dist {{.ROOT}}
+      - KAGI_INSTALL_BASE_URL="file://$PWD/target/dist" KAGI_INSTALL_VERIFY=skip sh install.sh --force "v$(target/release/kagi-search --version | cut -d' ' -f2)"

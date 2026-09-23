@@ -188,6 +188,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read # checkout source to upload install.sh
+      id-token: write # sign build provenance attestations
+      attestations: write # store build provenance attestations
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-installer
       cancel-in-progress: false
@@ -196,6 +198,9 @@ jobs:
         with:
           ref: ${{ needs.prepare.outputs.ref }}
           persist-credentials: false
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-path: install.sh
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: install.sh
@@ -208,7 +213,7 @@ jobs:
     if: ${{ !cancelled() && !failure() && needs.prepare.outputs.should_release == 'true' }}
     permissions:
       contents: write # publish the GitHub release
-      attestations: read # smoke test verifies the built archives' attestations
+      attestations: read # smoke test verifies the attestations of the built archive and install.sh
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}-release
       cancel-in-progress: false
@@ -228,16 +233,49 @@ jobs:
           TAG: ${{ needs.prepare.outputs.tag }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          smoke_home="$(mktemp -d)"
-          HOME="$smoke_home" \
-            KAGI_INSTALL_BASE_URL="file://$PWD/dist" \
-            sh dist/install.sh "$TAG"
-          test -x "$smoke_home/.local/bin/kagi-search"
-          test -x "$smoke_home/.local/bin/kagi-maps"
-          test -x "$smoke_home/.local/bin/kagi-summarize"
-          test -f "$smoke_home/.agents/skills/kagi/SKILL.md"
-          test -f "$smoke_home/.claude/skills/kagi/SKILL.md"
-          test -f "$smoke_home/.gemini/antigravity-cli/skills/kagi/SKILL.md"
+          gh attestation verify dist/install.sh --repo "$GITHUB_REPOSITORY"
+          home="$(mktemp -d)"
+          dist="file://$PWD/dist"
+          kagi_install() { HOME="$home" KAGI_INSTALL_BASE_URL="$dist" sh dist/install.sh "$@"; }
+          snapshot() { find "$home" -printf '%i %T@ %p %l\n' | sort; }
+
+          # Agent roots that exist get a link; the real skill copy of an older
+          # installer and a v0.4 per-binary skill dir go away.
+          mkdir -p "$home/.claude/skills/kagi" "$home/.codex" "$home/.gemini/antigravity-cli" \
+            "$home/.agents/skills/kagi-search"
+          status=0
+          kagi_install --check "$TAG" || status=$?
+          test "$status" -eq 100
+
+          kagi_install "$TAG"
+          test -x "$home/.local/bin/kagi-search"
+          test -x "$home/.local/bin/kagi-maps"
+          test -x "$home/.local/bin/kagi-summarize"
+          test -f "$home/.agents/skills/kagi/SKILL.md"
+          test ! -e "$home/.agents/skills/kagi-search"
+          test "$(readlink "$home/.claude/skills/kagi")" = ../../.agents/skills/kagi
+          test "$(readlink "$home/.codex/skills/kagi")" = ../../.agents/skills/kagi
+          test "$(readlink "$home/.gemini/antigravity-cli/skills/kagi")" = ../../../.agents/skills/kagi
+          test -f "$home/.claude/skills/kagi/SKILL.md"
+          test ! -e "$home/.pi"
+
+          # A second run finds the current version and changes nothing.
+          before="$(snapshot)"
+          kagi_install "$TAG" | grep -Fx "kagi ${TAG#v} is current"
+          test "$before" = "$(snapshot)"
+          kagi_install --check "$TAG"
+
+          # A symlinked config root gets the link realpath gives. A skills dir
+          # that links to the source dir keeps the real skill.
+          home="$(mktemp -d)"
+          mkdir -p "$home/dots/claude" "$home/.agents/skills" "$home/.codex"
+          ln -s dots/claude "$home/.claude"
+          ln -s ../.agents/skills "$home/.codex/skills"
+          kagi_install "$TAG"
+          test "$(readlink "$home/.claude/skills/kagi")" = ../../../.agents/skills/kagi
+          test -f "$home/.claude/skills/kagi/SKILL.md"
+          test ! -L "$home/.agents/skills/kagi"
+          test -f "$home/.codex/skills/kagi/SKILL.md"
       - name: Write release notes
         shell: bash
         env:

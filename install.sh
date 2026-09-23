@@ -1,50 +1,36 @@
 #!/usr/bin/env sh
+# Install or update kagi-search, kagi-maps, kagi-summarize, and the kagi skill.
+#
+# usage: install.sh [--check] [--force] [<version-tag>]
+#
+# Without a tag it installs the latest release. When the installed
+# kagi-search --version already matches, it says so and changes nothing;
+# --force installs anyway. --check installs nothing: it exits 0 when the
+# install is current and 100 when an update is available.
 set -eu
 
+usage="usage: install.sh [--check] [--force] [<version-tag>]"
 repo="${KAGI_INSTALL_REPO:-rubas/kagi}"
-version="${1:-${KAGI_INSTALL_VERSION:-}}"
-
-if [ -z "$version" ]; then
-  echo "usage: install.sh <version-tag>" >&2
-  echo "example: install.sh v0.1.5" >&2
-  exit 1
-fi
-
-# KAGI_INSTALL_BASE_URL lets the release workflow smoke-test this script
-# against just-built local artifacts (file:// URL) before publishing.
-base_url="${KAGI_INSTALL_BASE_URL:-https://github.com/${repo}/releases/download/${version}}"
-
-os="$(uname -s)"
-arch="$(uname -m)"
-
-case "$os/$arch" in
-Linux/x86_64)
-  archive="kagi-linux-x86_64.tar.gz"
-  root="kagi-linux-x86_64"
-  ;;
-Darwin/arm64)
-  archive="kagi-macos-aarch64.tar.gz"
-  root="kagi-macos-aarch64"
-  ;;
-*)
-  echo "unsupported platform: $os/$arch" >&2
-  exit 1
-  ;;
-esac
-
-tmp="$(mktemp -d)"
-cleanup() {
-  rm -rf "$tmp"
-}
-trap cleanup EXIT INT TERM
-
-curl -fSL "${base_url}/${archive}" -o "$tmp/$archive"
-curl -fSL "${base_url}/kagi-skills.tar.gz" -o "$tmp/kagi-skills.tar.gz"
-
-# Verify GitHub build provenance attestations before trusting the archives.
-# KAGI_INSTALL_VERIFY: auto (default) verifies when gh is available and warns
-# otherwise; require fails without verification; skip disables it.
+version="${KAGI_INSTALL_VERSION:-}"
 verify="${KAGI_INSTALL_VERIFY:-auto}"
+check=false
+force=false
+
+for arg; do
+  case "$arg" in
+  --check) check=true ;;
+  --force) force=true ;;
+  -*)
+    echo "$usage" >&2
+    exit 1
+    ;;
+  *) version="$arg" ;;
+  esac
+done
+
+# KAGI_INSTALL_VERIFY: auto (default) verifies the GitHub build provenance
+# attestations when gh is available and warns otherwise; require fails without
+# verification; skip disables it.
 case "$verify" in
 auto | require | skip) ;;
 *)
@@ -53,10 +39,61 @@ auto | require | skip) ;;
   ;;
 esac
 
+os="$(uname -s)"
+arch="$(uname -m)"
+
+case "$os/$arch" in
+Linux/x86_64) root="kagi-linux-x86_64" ;;
+Darwin/arm64) root="kagi-macos-aarch64" ;;
+*)
+  echo "unsupported platform: $os/$arch" >&2
+  exit 1
+  ;;
+esac
+
+if [ -z "$version" ]; then
+  if [ -n "${KAGI_INSTALL_BASE_URL:-}" ]; then
+    echo "KAGI_INSTALL_BASE_URL needs a version tag" >&2
+    exit 1
+  fi
+  # The web redirect of /releases/latest names the tag; unlike the API it needs
+  # no token and has no rate limit.
+  url="$(curl -fsSIL -o /dev/null -w '%{url_effective}' "https://github.com/${repo}/releases/latest")" || exit 1
+  case "$url" in
+  */releases/tag/*) version="${url##*/}" ;;
+  *)
+    echo "no release found at https://github.com/${repo}/releases/latest" >&2
+    exit 1
+    ;;
+  esac
+fi
+
+bin_dir="${HOME}/.local/bin"
+target="${version#v}"
+installed="$("${bin_dir}/kagi-search" --version 2>/dev/null)" || installed=""
+installed="${installed#kagi-search }"
+
+if [ "$installed" = "$target" ]; then
+  echo "kagi ${target} is current"
+  if $check || ! $force; then exit 0; fi
+else
+  echo "kagi: ${installed:-not installed} -> ${target}"
+  if $check; then exit 100; fi
+fi
+
+# KAGI_INSTALL_BASE_URL points at local archives (file:// URL): the release
+# smoke test, task install, and a host that verified the archives itself.
+base_url="${KAGI_INSTALL_BASE_URL:-https://github.com/${repo}/releases/download/${version}}"
+
+tmp="$(mktemp -d)"
+trap 'rm -rf "$tmp"' EXIT
+trap 'exit 1' INT TERM
+
+curl -fsSL "${base_url}/${root}.tar.gz" -o "$tmp/${root}.tar.gz"
+
 if [ "$verify" != "skip" ]; then
   if command -v gh >/dev/null 2>&1; then
-    gh attestation verify "$tmp/$archive" --repo "$repo"
-    gh attestation verify "$tmp/kagi-skills.tar.gz" --repo "$repo"
+    gh attestation verify "$tmp/${root}.tar.gz" --repo "$repo"
   elif [ "$verify" = "require" ]; then
     echo "KAGI_INSTALL_VERIFY=require but the gh CLI is not available to verify attestations" >&2
     exit 1
@@ -66,44 +103,58 @@ if [ "$verify" != "skip" ]; then
   fi
 fi
 
-tar -xzf "$tmp/$archive" -C "$tmp"
-tar -xzf "$tmp/kagi-skills.tar.gz" -C "$tmp"
+tar -xzf "$tmp/${root}.tar.gz" -C "$tmp"
 
-# Fail before touching any installed files if either archive's layout drifted.
-for required in \
-  "$tmp/$root/bin/kagi-search" \
-  "$tmp/$root/bin/kagi-maps" \
-  "$tmp/$root/bin/kagi-summarize" \
-  "$tmp/kagi-skills/kagi/SKILL.md"; do
-  if [ ! -f "$required" ]; then
-    echo "unexpected archive layout: missing ${required#"$tmp"/}" >&2
+# Fail before touching any installed files if the archive layout drifted.
+for file in bin/kagi-search bin/kagi-maps bin/kagi-summarize skills/kagi/SKILL.md; do
+  if [ ! -f "$tmp/$root/$file" ]; then
+    echo "unexpected archive layout: missing $root/$file" >&2
     exit 1
   fi
 done
 
-bin_dir="${HOME}/.local/bin"
-agents_root="${HOME}/.agents/skills"
-claude_root="${HOME}/.claude/skills"
-gemini_root="${HOME}/.gemini/antigravity-cli/skills"
+# The per-binary skill dirs of v0.4 and earlier are legacy; remove them.
+for dir in .agents/skills .claude/skills .codex/skills .gemini/antigravity-cli/skills .pi/agent/skills; do
+  rm -rf "$HOME/$dir/kagi-search" "$HOME/$dir/kagi-maps" "$HOME/$dir/kagi-summarize"
+done
 
-install -d "$bin_dir" "$agents_root" "$claude_root" "$gemini_root"
+# The skill has one source, ~/.agents/skills/kagi.
+skill="$HOME/.agents/skills/kagi"
+rm -rf "$skill"
+install -d "$skill"
+install -m 644 "$tmp/$root/skills/kagi/SKILL.md" "$skill/SKILL.md"
+skill="$(cd "$skill" && pwd -P)"
 
-# The three per-binary skill dirs of v0.4 and earlier are legacy; remove them.
-rm -rf \
-  "${agents_root}/kagi" "${claude_root}/kagi" "${gemini_root}/kagi" \
-  "${agents_root}/kagi-search" "${agents_root}/kagi-maps" "${agents_root}/kagi-summarize" \
-  "${claude_root}/kagi-search" "${claude_root}/kagi-maps" "${claude_root}/kagi-summarize" \
-  "${gemini_root}/kagi-search" "${gemini_root}/kagi-maps" "${gemini_root}/kagi-summarize"
+# Each agent whose config root exists gets a relative link to the skill. Like
+# the realpath -m --relative-to of a dotfiles fan-out, the target runs between
+# the physical paths, so it resolves through a symlinked config root and the
+# installer and the fan-out never replace each other's link.
+link() { # <agent config root>
+  [ -d "$HOME/$1" ] || return 0
+  install -d "$HOME/$1/skills"
+  dir="$(cd "$HOME/$1/skills" && pwd -P)"
+  # A skills dir that is the source dir already holds the skill.
+  [ "$dir/kagi" != "$skill" ] || return 0
+  base="$dir"
+  up=""
+  while :; do
+    case "$skill" in "$base"/*) break ;; esac
+    base="${base%/*}"
+    up="../$up"
+  done
+  rm -rf "$dir/kagi"
+  ln -s "$up${skill#"$base"/}" "$dir/kagi"
+  echo "linked $HOME/$1/skills/kagi -> $up${skill#"$base"/}"
+}
+link .claude
+link .codex
+link .gemini/antigravity-cli
+link .pi/agent
 
-install -d "${agents_root}/kagi" "${claude_root}/kagi" "${gemini_root}/kagi"
-
-install -m 755 "$tmp/$root/bin/kagi-search" "${bin_dir}/kagi-search"
-install -m 755 "$tmp/$root/bin/kagi-maps" "${bin_dir}/kagi-maps"
-install -m 755 "$tmp/$root/bin/kagi-summarize" "${bin_dir}/kagi-summarize"
-
-install -m 644 "$tmp/kagi-skills/kagi/SKILL.md" "${agents_root}/kagi/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi/SKILL.md" "${claude_root}/kagi/SKILL.md"
-install -m 644 "$tmp/kagi-skills/kagi/SKILL.md" "${gemini_root}/kagi/SKILL.md"
-
-echo "installed kagi-search, kagi-maps and kagi-summarize to ${bin_dir}"
-echo "installed skills to ${agents_root}, ${claude_root} and ${gemini_root}"
+# kagi-search goes last: its --version marks the install as current, so an
+# install that fails before it runs again in full.
+install -d "$bin_dir"
+for bin in kagi-maps kagi-summarize kagi-search; do
+  install -m 755 "$tmp/$root/bin/$bin" "$bin_dir/$bin"
+done
+echo "installed kagi ${target}: kagi-search, kagi-maps, and kagi-summarize in ${bin_dir}, the skill in ${skill}"

@@ -17,22 +17,60 @@ Requires a Kagi account with an active session token.
 ### From a GitHub release
 
 ```bash
-curl -fSL https://github.com/rubas/kagi/releases/download/v0.5.3/install.sh | sh -s v0.5.3
+curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh
 ```
 
-This installs:
+The installer puts `kagi-search`, `kagi-maps`, and `kagi-summarize` in `~/.local/bin` and the
+`kagi` skill in `~/.agents/skills/kagi`. It links the skill into the skill directory of each agent
+whose configuration directory exists:
 
-- `kagi-search`, `kagi-maps`, and `kagi-summarize` to `~/.local/bin`
-- the `kagi` skill to `~/.agents/skills`, `~/.claude/skills`, and `~/.gemini/antigravity-cli/skills`
+| Agent directory             | Link                                                                      |
+| --------------------------- | ------------------------------------------------------------------------- |
+| `~/.claude`                 | `~/.claude/skills/kagi` -> `../../.agents/skills/kagi`                    |
+| `~/.codex`                  | `~/.codex/skills/kagi` -> `../../.agents/skills/kagi`                     |
+| `~/.gemini/antigravity-cli` | `~/.gemini/antigravity-cli/skills/kagi` -> `../../../.agents/skills/kagi` |
+| `~/.pi/agent`               | `~/.pi/agent/skills/kagi` -> `../../../.agents/skills/kagi`               |
+
+A link replaces a skill directory that an older installer copied there. When a configuration
+directory or its `skills` directory is a symlink, the link target is the relative path between the
+resolved directories, the same path `realpath --relative-to` gives. A `skills` directory that links
+to `~/.agents/skills` already holds the skill and gets no link.
+
+Run the same command again to update. When `~/.local/bin/kagi-search --version` already shows the
+target version, the installer says so and changes nothing.
+
+Put a release tag or an option after `sh -s --`:
+
+```bash
+# Install a given release.
+curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- v0.5.3
+# Show the installed and the latest version, and install nothing.
+curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- --check
+```
+
+- `--check` exits 0 when the install is current and 100 when an update is available.
+- `--force` installs again when the version already matches.
 
 Supported platforms: Linux x86_64 and macOS aarch64.
 
-When the GitHub CLI (`gh`) is available, the installer verifies the build
-provenance attestations of both archives before installing anything; without
-`gh` it warns and continues. Set `KAGI_INSTALL_VERIFY=require` to fail instead,
-or `KAGI_INSTALL_VERIFY=skip` to disable verification. For a fully verifiable
-install path, prefer the Nix flake below: `flake.lock` pins every input by
-hash.
+When the GitHub CLI (`gh`) is available, the installer verifies the build provenance attestation of
+the release archive before it changes a file; without `gh` it warns and continues. For a fully
+verifiable install path, prefer the Nix flake below: `flake.lock` pins every input by hash.
+
+The release also attests `install.sh`. To verify the installer before you run it:
+
+```bash
+curl -fsSLO https://github.com/rubas/kagi/releases/latest/download/install.sh &&
+  gh attestation verify install.sh --repo rubas/kagi &&
+  KAGI_INSTALL_VERIFY=require sh install.sh
+```
+
+| Variable                | Effect                                                                                                                  |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `KAGI_INSTALL_VERIFY`   | `auto` (default) verifies when `gh` is available. `require` fails without `gh`. `skip` does not verify.                 |
+| `KAGI_INSTALL_BASE_URL` | Downloads the archive from this URL instead of the GitHub release, for example `file:///tmp/kagi`. Needs a version tag. |
+| `KAGI_INSTALL_VERSION`  | The version tag when no argument gives one.                                                                             |
+| `KAGI_INSTALL_REPO`     | The GitHub repository, `rubas/kagi` by default.                                                                         |
 
 ### From source
 
