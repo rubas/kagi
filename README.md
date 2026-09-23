@@ -43,7 +43,7 @@ Put a release tag or an option after `sh -s --`:
 
 ```bash
 # Install a given release.
-curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- v0.5.3
+curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- v0.5.4
 # Show the installed and the latest version, and install nothing.
 curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- --check
 ```

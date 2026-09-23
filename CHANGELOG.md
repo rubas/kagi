@@ -5,6 +5,47 @@ All notable changes to this project are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.5.4] - 2026-09-23
+
+### Added
+
+- `install.sh` installs the latest release when you give no version tag:
+  `curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh`.
+  It reads the tag from the web redirect of `releases/latest` and needs no
+  `gh`. A pinned tag, `sh -s -- v0.5.4`, still works.
+- `install.sh --check` prints the installed and the target version and
+  installs nothing. It exits 0 when the install is current and 100 when an
+  update is available.
+- `install.sh --force` installs again when the version already matches.
+- The release attests `install.sh`. Check it with
+  `gh attestation verify install.sh --repo rubas/kagi` before you run it.
+
+### Changed
+
+- `install.sh` does nothing when `~/.local/bin/kagi-search --version` already
+  shows the target version. Before, each run installed again. Add `--force`
+  to reinstall the same version.
+- The skill installs once to `~/.agents/skills/kagi`. The installer links it
+  into `~/.claude/skills`, `~/.codex/skills`, `~/.gemini/antigravity-cli/skills`,
+  and `~/.pi/agent/skills` when that agent's config directory exists. The link
+  target is relative, for example `../../.agents/skills/kagi`, and resolves
+  through a symlinked config or `skills` directory.
+- `~/.claude/skills/kagi` and `~/.gemini/antigravity-cli/skills/kagi` become
+  symlinks instead of copies. Do not edit the skill there; the next install
+  replaces `~/.agents/skills/kagi`. Codex and pi get the skill for the first
+  time.
+- An agent without a config directory gets no link. Before, the installer
+  created `~/.claude/skills` and `~/.gemini/antigravity-cli/skills` in any
+  case. An agent set up after the install gets its link with the next release
+  or with `--force`.
+- The installer downloads and verifies only the platform archive, which
+  contains the skill. It no longer downloads `kagi-skills.tar.gz`. The release
+  still publishes it.
+- The installer also removes the v0.4 per-binary skill directories from
+  `~/.codex/skills` and `~/.pi/agent/skills`.
+- `task install` installs the local build through `install.sh --force` in the
+  release layout. It runs only on Linux x86_64 and macOS aarch64.
+
 ## [0.5.3] - 2026-09-23
 
 ### Fixed
