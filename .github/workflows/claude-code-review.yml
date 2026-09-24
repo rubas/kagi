@@ -3,7 +3,7 @@
 # hand when rubas/ci changes.
 #
 # Auth: no GitHub secrets. The job mints a GitHub OIDC token, exchanges it for
-# a short-lived Infisical token over the read-only rubas identity, and reads
+# a short-lived Infisical token over the read-only identity ci-review, and reads
 # the shared Claude OAuth token. All values below are identifiers, safe to
 # commit; only the token is a secret and it never leaves Infisical.
 name: Claude Code Review
@@ -95,8 +95,8 @@ jobs:
         env:
           # Identifiers only. The runner holds no Infisical client secret.
           INFISICAL_API_URL: https://secrets.rubas.dev/api
-          INFISICAL_PROJECT_ID: fcfa5858-98ac-4d17-9bc6-f6729d081a84
-          INFISICAL_IDENTITY_ID: 46677de3-7978-42b6-89eb-a06056b5face
+          INFISICAL_PROJECT_ID: a16c82e6-ce67-48a7-b22b-3932f665d372 # r-ci-repo
+          INFISICAL_IDENTITY_ID: 768aea9c-8b28-424c-b777-e54a8ca03f9b # ci-review
           INFISICAL_AUDIENCE: https://github.com/${{ github.repository_owner }}
         run: |
           set -euo pipefail
@@ -126,7 +126,7 @@ jobs:
           SECRET_PATH="/claude-review"
           SECRETS=$(curl -fsSL -G "$INFISICAL_API_URL/v3/secrets/raw" \
             --data-urlencode "workspaceId=$INFISICAL_PROJECT_ID" \
-            --data-urlencode "environment=production" \
+            --data-urlencode "environment=prod" \
             --data-urlencode "secretPath=$SECRET_PATH" \
             -H "Authorization: Bearer $TOKEN")
           mapfile -t CLAUDE_TOKENS < <(jq -r '
@@ -136,7 +136,7 @@ jobs:
             | sort_by(.secretKey) | .[].secretValue' <<<"$SECRETS")
           COUNT=${#CLAUDE_TOKENS[@]}
           if [[ "$COUNT" -eq 0 ]]; then
-            echo "::error::no CLAUDE_CODE_OAUTH_TOKEN* at Infisical path $SECRET_PATH (env production)"
+            echo "::error::no CLAUDE_CODE_OAUTH_TOKEN* at Infisical path $SECRET_PATH (env prod)"
             exit 1
           fi
 
