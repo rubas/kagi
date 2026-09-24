@@ -1,4 +1,4 @@
-# Self-contained copy of rubas/ci claude-review.yml: this repo is public and
+# Self-contained copy of rubas/ci code-review.yml: this repo is public and
 # cannot call a reusable workflow in the private rubas/ci. Keep it in sync by
 # hand when rubas/ci changes.
 #
@@ -102,7 +102,7 @@ jobs:
           set -euo pipefail
 
           # Mint a GitHub OIDC JWT and exchange it for a short-lived Infisical
-          # token using the identity bound to this repository owner.
+          # token as ci-review.
           JWT=$(curl -fsSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
             "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=$INFISICAL_AUDIENCE" | jq -r '.value')
           if [[ -z "$JWT" || "$JWT" == "null" ]]; then
