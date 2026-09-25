@@ -48,8 +48,10 @@ jobs:
       # path crate fresh by mtime alone, and every pod checks out to the same
       # path. The warm part is the build main publishes with ci-cache. The
       # touch makes these sources newer than anything in the copy, so the
-      # crate itself always rebuilds.
+      # crate itself always rebuilds. Main builds from empty instead, so the
+      # copy it publishes holds only its current build and never grows.
       - name: Restore main's build
+        if: github.event_name != 'push'
         run: |
           ci-cache restore cargo-target target || echo "no build from main yet, building cold"
           git ls-files -z | xargs -0 touch
