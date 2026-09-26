@@ -20,8 +20,8 @@ Requires a Kagi account with an active session token.
 curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh
 ```
 
-The installer puts `kagi-search`, `kagi-maps`, and `kagi-summarize` in `~/.local/bin`. It also
-removes the `kagi` agent skill and its links that releases up to 0.5.4 installed.
+The installer puts `kagi-search`, `kagi-maps`, and `kagi-summarize` in `~/.local/bin`. On the upgrade
+from 0.5 or earlier, it removes the `kagi` agent skill and the links that release installed.
 
 Run the same command again to update. When `~/.local/bin/kagi-search --version` already shows the
 target version, the installer says so and changes nothing.

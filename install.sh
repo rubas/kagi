@@ -115,10 +115,16 @@ for file in bin/kagi-search bin/kagi-maps bin/kagi-summarize; do
 done
 
 # Releases up to 0.5.4 installed an agent skill: one kagi dir plus its links,
-# or per-binary dirs in v0.4 and earlier. Remove them.
-for dir in .agents/skills .claude/skills .codex/skills .gemini/antigravity-cli/skills .pi/agent/skills; do
-  rm -rf "$HOME/$dir/kagi" "$HOME/$dir/kagi-search" "$HOME/$dir/kagi-maps" "$HOME/$dir/kagi-summarize"
-done
+# or per-binary dirs in v0.4 and earlier. Remove them only on the upgrade from
+# such a release, so a skill the user brings under the same name survives.
+case "$installed" in
+0.[0-5].*)
+  for dir in .agents/skills .claude/skills .codex/skills .gemini/antigravity-cli/skills .pi/agent/skills; do
+    rm -rf "$HOME/$dir/kagi" "$HOME/$dir/kagi-search" "$HOME/$dir/kagi-maps" "$HOME/$dir/kagi-summarize"
+  done
+  echo "removed the kagi agent skill that kagi ${installed} installed"
+  ;;
+esac
 
 # kagi-search goes last: its --version marks the install as current, so an
 # install that fails before it runs again in full.

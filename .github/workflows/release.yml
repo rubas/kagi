@@ -208,10 +208,13 @@ jobs:
           kagi_install() { HOME="$home" KAGI_INSTALL_BASE_URL="$dist" sh dist/install.sh "$@"; }
           snapshot() { find "$home" -printf '%i %T@ %p %l\n' | sort; }
 
-          # The skill of an older installer, its links, and a v0.4 per-binary
-          # skill dir go away.
-          mkdir -p "$home/.agents/skills/kagi" "$home/.agents/skills/kagi-search" "$home/.codex/skills"
+          # The upgrade from 0.5 removes the skill that release installed, its
+          # links, and a v0.4 per-binary skill dir.
+          mkdir -p "$home/.local/bin" "$home/.agents/skills/kagi" "$home/.agents/skills/kagi-search" \
+            "$home/.codex/skills"
           ln -s ../../.agents/skills/kagi "$home/.codex/skills/kagi"
+          printf '#!/bin/sh\necho kagi-search 0.5.4\n' > "$home/.local/bin/kagi-search"
+          chmod +x "$home/.local/bin/kagi-search"
           status=0
           kagi_install --check "$TAG" || status=$?
           test "$status" -eq 100
@@ -230,6 +233,11 @@ jobs:
           kagi_install "$TAG" | grep -Fx "kagi ${TAG#v} is current"
           test "$before" = "$(snapshot)"
           kagi_install --check "$TAG"
+
+          # Past 0.5, a skill the user brings under the same name stays.
+          mkdir -p "$home/.claude/skills/kagi"
+          kagi_install --force "$TAG"
+          test -d "$home/.claude/skills/kagi"
       - name: Write release notes
         shell: bash
         env:

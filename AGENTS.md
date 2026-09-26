@@ -41,7 +41,8 @@ Unofficial Unix-style CLIs for Kagi: `kagi-search`, `kagi-maps`, `kagi-summarize
   run it on local archives. `task install` packs the local build like a
   release archive, so it runs only on the two release platforms.
 - The repo ships no agent skill; an agent that uses these CLIs brings its own.
-  `install.sh` removes the skill that releases up to 0.5.4 installed.
+  On the upgrade from 0.5 or earlier, `install.sh` removes the skill that
+  release installed; later runs leave any `kagi` skill alone.
 - A version bump is the release trigger: on each push to `main`, `release.yml`
   reads `version` from `Cargo.toml`. When the tag `v<version>` does not exist,
   it tags and publishes. The tag decides, not the parent commit, so a
