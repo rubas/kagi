@@ -1,66 +1,48 @@
 # kagi
 
-## Goal
-
-Unofficial Unix-style CLIs for Kagi: `kagi-search`, `kagi-maps`, `kagi-summarize`.
-Each binary ships a companion agent skill from `skills/`.
+Three Unix-style CLIs for Kagi, `kagi-search`, `kagi-maps`, and `kagi-summarize`, and one agent
+skill, `skills/kagi`, for all three. `README.md` covers install, the token, and usage.
 
 ## Gates
 
-- `task ci` runs `task check`, the release-profile check, `nix build`,
-  cargo-machete, and cargo-deny. GitHub Actions runs all but `task test:nix`, so
-  run `task ci` yourself after you touch `flake.nix`, `flake.lock`, or
-  `Cargo.toml`. A lock-only input refresh still ships a Nix build nothing else
-  checks.
-- `task lint` calls `zizmor`. The `nix develop` shell does not ship it, so put
-  `zizmor` on `PATH` before you run lint or check.
-- `task test:live` hits the real Kagi service. Run it when you change the
-  request path or a parser: `src/cli.rs`, `src/client.rs`, or `src/parse.rs`. It
-  needs `KAGI_SESSION_TOKEN` or `~/.config/kagi/session-token` and fails without
-  one.
+- `task ci` runs `task check`, the release-profile check, `nix build`, cargo-machete, and
+  cargo-deny. GitHub Actions runs all of it except `task test:nix`. Run `task ci` yourself after
+  you touch `flake.nix`, `flake.lock`, or `Cargo.toml`, because nothing else builds the Nix
+  package. This includes a lock-only input refresh.
+- `task test:live` calls the real Kagi service. Run it when you change the request path or a
+  parser: `src/cli.rs`, `src/client.rs`, or `src/parse.rs`. It needs a session token (see
+  `README.md`) and fails without one.
 
-## Layout
+## Rules
 
-- `skills/kagi` is the one skill; it installs as `kagi`. A rename changes all
-  of these together:
+- Keep three separate binaries. Do not add a combined command again.
+- Never hardcode a session token.
+- A rename of the skill changes all of these together:
   - `install.sh` and the `install` task in `Taskfile.yml`
   - `postInstall` and `skillNames` in `flake.nix`
   - `.github/workflows/release.yml`
-  - the `name:` front matter in each `skills/*/SKILL.md`
-  - the documented install paths in `README.md`
-
-## Decisions
-
-- Three separate binaries. Do not reintroduce a combined command.
-- Never hardcode a session token. The client reads `KAGI_SESSION_TOKEN` (empty
-  counts as unset), then `$XDG_CONFIG_HOME/kagi/session-token`, falling back to
-  `~/.config/kagi/session-token`. It refuses a token file that is group- or
-  world-readable.
-- `--sort` means two different things. `kagi-search` sends it to Kagi as the
-  `order` parameter. `kagi-maps` fetches the whole page, sorts locally, then
-  truncates to `--limit`.
-- `install.sh` is the one installer. `task install` and the release smoke test
-  run it on local archives. It installs the skill once to
-  `~/.agents/skills/kagi` and links it into each agent's skill dir. The link
-  targets are the ones `realpath -m --relative-to` gives between the physical
-  paths, the same links a dotfiles fan-out from `~/.agents/skills` creates.
-  Keep them byte-identical, or the installer and the fan-out replace each
-  other's links on every run. `task install` packs the local build like a
-  release archive, so it runs only on the two release platforms.
-- A version bump is the release trigger: on each push to `main`, `release.yml`
-  reads `version` from `Cargo.toml`. When the tag `v<version>` does not exist,
-  it tags and publishes. The tag decides, not the parent commit, so a
-  multi-commit push or a cancelled run does not lose a release. A tag deleted by
-  hand comes back on the next push. Recover a failed build or release through
-  `workflow_dispatch` on `release.yml`.
+  - the `name:` front matter in `skills/kagi/SKILL.md`
+  - the install paths in `README.md`
+- `--sort` means two things. `kagi-search` sends it to Kagi as the `order` parameter. `kagi-maps`
+  gets the whole result page, sorts it locally, then cuts it to `--limit`.
+- `install.sh` is the one installer. `task install` and the release smoke test run it on local
+  archives. It installs the skill once to `~/.agents/skills/kagi` and links it into the skill
+  directory of each agent. Each link target is the path `realpath -m --relative-to` gives between
+  the physical paths, the same link a dotfiles fan-out from `~/.agents/skills` makes. Keep the two
+  identical, or the installer and the fan-out replace each other's links on every run.
+  `task install` packs the local build like a release archive, so it runs only on the two release
+  platforms.
+- A version bump is the release trigger. On each push to `main`, `release.yml` reads `version`
+  from `Cargo.toml`. When the tag `v<version>` does not exist, it tags and publishes. The tag
+  decides, not the parent commit, so a push of many commits or a cancelled run does not lose a
+  release. A tag that someone deletes comes back on the next push. To recover a failed build or
+  release, run `release.yml` through `workflow_dispatch`.
 
 ## Pitfalls
 
-- `flake.nix` repeats the package version as a literal. Bump it in the same
-  commit as `Cargo.toml`, or `nix build` produces a package with the old
-  version.
-- `install.sh` runs under `sh` on Linux with GNU tools and on macOS with BSD
-  tools. Use POSIX sh and flags both sets have: no `realpath --relative-to`, no
-  `ln -T`.
-- `ci.yml` skips a pull request whose author is not the repository owner. A
-  contributor PR shows no checks; that is the gate, not a broken run.
+- `flake.nix` repeats the package version as a literal. Bump it in the same commit as
+  `Cargo.toml`, or `nix build` makes a package with the old version.
+- `install.sh` runs under `sh` on Linux with GNU tools and on macOS with BSD tools. Use POSIX sh
+  and only flags that both sets have: no `realpath --relative-to`, no `ln -T`.
+- `ci.yml` skips a pull request whose author is not the repository owner. A contributor PR shows
+  no checks. That is the gate, not a broken run.
