@@ -6,9 +6,8 @@ Unofficial Unix-style CLIs for Kagi: `kagi-search`, `kagi-maps`, `kagi-summarize
 
 ## Gates
 
-- `task check` (fmt:check, lint, test) before you push.
-- `task ci` adds the release-profile check, `nix build`, cargo-machete, and
-  cargo-deny. GitHub Actions runs every one of those except `task test:nix`, so
+- `task ci` runs `task check`, the release-profile check, `nix build`,
+  cargo-machete, and cargo-deny. GitHub Actions runs all but `task test:nix`, so
   run `task ci` yourself after you touch `flake.nix`, `flake.lock`, or
   `Cargo.toml`. A lock-only input refresh still ships a Nix build nothing else
   checks.
@@ -17,15 +16,7 @@ Unofficial Unix-style CLIs for Kagi: `kagi-search`, `kagi-maps`, `kagi-summarize
 - `task test:live` hits the real Kagi service. Run it when you change the
   request path or a parser: `src/cli.rs`, `src/client.rs`, or `src/parse.rs`. It
   needs `KAGI_SESSION_TOKEN` or `~/.config/kagi/session-token` and fails without
-  one. `task test:live:advisory` gives the same signal without failing the task.
-
-## Layout
-
-- `src/cli.rs`: argument definitions and the `as_api_value` tables that turn
-  `--lens`, `--sort`, `--time`, and `--type` into raw Kagi parameter values.
-- `src/client.rs`: token resolution, HTTP client, Kagi request parameters.
-- `src/parse.rs`: search HTML, maps JSON, summarize stream.
-- `tests/live.rs` runs only under `--ignored`.
+  one.
 
 ## Decisions
 
