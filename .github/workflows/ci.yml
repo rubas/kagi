@@ -36,12 +36,22 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
+      - uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
+        with:
+          tool: cargo-machete,cargo-deny
+      # Set only after the install steps: they write rustup, its proxies, and
+      # the tools into $CARGO_HOME/bin with no lock across pods, and a shared
+      # bin failed a concurrent job with "Text file busy" (rubas/babel,
+      # 2026-09-22). So those stay in the pod's ~/.cargo, and the shared home
+      # holds only cargo's registry and git caches, which cargo locks itself.
+      # v2 leaves the old home's stale binaries behind, which cargo would find
+      # first.
       - name: Cache paths
         run: |
           repo="${GITHUB_REPOSITORY//\//__}"
-          mkdir -p "/ci/$repo/cargo-home"
-          touch "/ci/$repo/cargo-home" # mark last-used for the prune timer
-          echo "CARGO_HOME=/ci/$repo/cargo-home" >> "$GITHUB_ENV"
+          mkdir -p "/ci/$repo/cargo-home-v2"
+          touch "/ci/$repo/cargo-home-v2" # mark last-used for the prune timer
+          echo "CARGO_HOME=/ci/$repo/cargo-home-v2" >> "$GITHUB_ENV"
 
       # The target dir is private to this pod. A shared one let cargo reuse
       # another branch's build of this crate (rubas/babel#698): cargo judges a
@@ -61,7 +71,6 @@ jobs:
           node-version: latest
       # task and zizmor come with the incus runner image.
       - run: task fmt:check
-      - run: cargo install cargo-machete cargo-deny
       - run: task lint
       - run: shellcheck install.sh
       - run: task test
