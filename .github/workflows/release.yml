@@ -234,10 +234,15 @@ jobs:
           test "$before" = "$(snapshot)"
           kagi_install --check "$TAG"
 
-          # Past 0.5, a skill the user brings under the same name stays.
-          mkdir -p "$home/.claude/skills/kagi"
-          kagi_install --force "$TAG"
-          test -d "$home/.claude/skills/kagi"
+          # A first install removes nothing: a skill the user brings stays.
+          home="$(mktemp -d)"
+          mkdir -p "$home/.agents/skills/kagi"
+          status=0
+          kagi_install --check "$TAG" || status=$?
+          test "$status" -eq 100
+          kagi_install "$TAG"
+          test -x "$home/.local/bin/kagi-search"
+          test -d "$home/.agents/skills/kagi"
       - name: Write release notes
         shell: bash
         env:
