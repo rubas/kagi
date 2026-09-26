@@ -3,7 +3,6 @@
 ## Goal
 
 Unofficial Unix-style CLIs for Kagi: `kagi-search`, `kagi-maps`, `kagi-summarize`.
-Each binary ships a companion agent skill from `skills/`.
 
 ## Gates
 
@@ -26,13 +25,6 @@ Each binary ships a companion agent skill from `skills/`.
   `--lens`, `--sort`, `--time`, and `--type` into raw Kagi parameter values.
 - `src/client.rs`: token resolution, HTTP client, Kagi request parameters.
 - `src/parse.rs`: search HTML, maps JSON, summarize stream.
-- `skills/kagi` is the one skill; it installs as `kagi`. A rename changes all
-  of these together:
-  - `install.sh` and the `install` task in `Taskfile.yml`
-  - `postInstall` and `skillNames` in `flake.nix`
-  - `.github/workflows/release.yml`
-  - the `name:` front matter in each `skills/*/SKILL.md`
-  - the documented install paths in `README.md`
 - `tests/live.rs` runs only under `--ignored`.
 
 ## Decisions
@@ -46,13 +38,10 @@ Each binary ships a companion agent skill from `skills/`.
   `order` parameter. `kagi-maps` fetches the whole page, sorts locally, then
   truncates to `--limit`.
 - `install.sh` is the one installer. `task install` and the release smoke test
-  run it on local archives. It installs the skill once to
-  `~/.agents/skills/kagi` and links it into each agent's skill dir. The link
-  targets are the ones `realpath -m --relative-to` gives between the physical
-  paths, the same links a dotfiles fan-out from `~/.agents/skills` creates.
-  Keep them byte-identical, or the installer and the fan-out replace each
-  other's links on every run. `task install` packs the local build like a
+  run it on local archives. `task install` packs the local build like a
   release archive, so it runs only on the two release platforms.
+- The repo ships no agent skill; an agent that uses these CLIs brings its own.
+  `install.sh` removes the skill that releases up to 0.5.4 installed.
 - A version bump is the release trigger: on each push to `main`, `release.yml`
   reads `version` from `Cargo.toml`. When the tag `v<version>` does not exist,
   it tags and publishes. The tag decides, not the parent commit, so a

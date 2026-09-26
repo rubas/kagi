@@ -38,10 +38,7 @@
           craneLib = crane.mkLib pkgs;
           commonArgs = {
             pname = "kagi";
-            version = "0.5.4";
-            # cleanSource, not crane's cleanCargoSource: postInstall installs the
-            # skills/*/SKILL.md files from the build source, which a cargo-only
-            # filter would drop.
+            version = "0.6.0";
             src = pkgs.lib.cleanSource ./.;
             strictDeps = true;
             nativeBuildInputs = [
@@ -69,9 +66,6 @@
             # The suite runs as its own check (checksFor) and in CI via `task test`;
             # the installable package only builds the binaries.
             doCheck = false;
-            postInstall = ''
-              install -Dm644 skills/kagi/SKILL.md "$out/share/kagi/skills/kagi/SKILL.md"
-            '';
           }
         );
 
@@ -151,20 +145,10 @@
         let
           cfg = config.programs.kagi;
           package = self.packages.${pkgs.stdenv.hostPlatform.system}.default;
-          skillNames = [ "kagi" ];
-
-          mkSkillFiles =
-            root:
-            builtins.listToAttrs (
-              map (name: {
-                name = "${root}/${name}";
-                value.source = "${cfg.package}/share/kagi/skills/${name}";
-              }) skillNames
-            );
         in
         {
           options.programs.kagi = {
-            enable = lib.mkEnableOption "Kagi search, maps, and summarization CLIs and skills";
+            enable = lib.mkEnableOption "Kagi search, maps, and summarization CLIs";
 
             package = lib.mkOption {
               type = lib.types.package;
@@ -175,11 +159,6 @@
 
           config = lib.mkIf cfg.enable {
             home.packages = [ cfg.package ];
-
-            home.file =
-              mkSkillFiles ".agents/skills"
-              // mkSkillFiles ".claude/skills"
-              // mkSkillFiles ".gemini/antigravity-cli/skills";
           };
         };
     };
