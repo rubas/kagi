@@ -39,10 +39,23 @@ jobs:
       - name: Cache paths
         run: |
           repo="${GITHUB_REPOSITORY//\//__}"
-          mkdir -p "/ci/$repo/cargo-target" "/ci/$repo/cargo-home"
-          touch "/ci/$repo/cargo-target" "/ci/$repo/cargo-home" # mark last-used for the prune timer
-          echo "CARGO_TARGET_DIR=/ci/$repo/cargo-target" >> "$GITHUB_ENV"
+          mkdir -p "/ci/$repo/cargo-home"
+          touch "/ci/$repo/cargo-home" # mark last-used for the prune timer
           echo "CARGO_HOME=/ci/$repo/cargo-home" >> "$GITHUB_ENV"
+
+      # The target dir is private to this pod. A shared one let cargo reuse
+      # another branch's build of this crate (rubas/babel#698): cargo judges a
+      # path crate fresh by mtime alone, and every pod checks out to the same
+      # path. The warm part is the build main publishes with ci-cache. The
+      # touch makes these sources newer than anything in the copy, so the
+      # crate itself always rebuilds. Main builds from empty instead, so the
+      # copy it publishes holds only its current build and never grows.
+      - name: Restore main's build
+        if: github.event_name != 'push'
+        run: |
+          ci-cache restore cargo-target target || echo "no build from main yet, building cold"
+          git ls-files -z | xargs -0 touch
+
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: latest
@@ -55,6 +68,11 @@ jobs:
       - run: task test:release-check
       - run: task deps:machete
       - run: task deps:deny
+
+      # Only main publishes, so no PR can feed its build to another job.
+      - name: Publish the build
+        if: github.event_name == 'push'
+        run: ci-cache save cargo-target target
 
   audit:
     name: Advisory audit
