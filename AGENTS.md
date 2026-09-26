@@ -9,6 +9,8 @@ covers install, the token, and usage.
   cargo-deny. GitHub Actions runs all of it except `task test:nix`. Run `task ci` yourself after
   you touch `flake.nix`, `flake.lock`, or `Cargo.toml`, because nothing else builds the Nix
   package. This includes a lock-only input refresh.
+- `task lint`, and with it `task check` and `task ci`, runs `zizmor`. The `nix develop` shell does
+  not include it, so put `zizmor` on `PATH` first.
 - `task test:live` calls the real Kagi service. Run it when you change the request path or a
   parser: `src/cli.rs`, `src/client.rs`, or `src/parse.rs`. It needs a session token (see
   `README.md`) and fails without one.
