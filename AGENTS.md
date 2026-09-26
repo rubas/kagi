@@ -7,8 +7,8 @@ Each binary ships a companion agent skill from `skills/`.
 
 ## Gates
 
-- `task ci` adds the release-profile check, `nix build`, cargo-machete, and
-  cargo-deny. GitHub Actions runs every one of those except `task test:nix`, so
+- `task ci` runs `task check`, the release-profile check, `nix build`,
+  cargo-machete, and cargo-deny. GitHub Actions runs all but `task test:nix`, so
   run `task ci` yourself after you touch `flake.nix`, `flake.lock`, or
   `Cargo.toml`. A lock-only input refresh still ships a Nix build nothing else
   checks.
