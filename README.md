@@ -1,6 +1,7 @@
 # kagi
 
-Unofficial Unix-style CLI tools for [Kagi Search](https://kagi.com). Not affiliated with or endorsed by Kagi Inc.
+Unofficial Unix-style command-line tools for [Kagi Search](https://kagi.com). Kagi Inc. does not
+make or endorse them.
 
 Each binary does one job:
 
@@ -8,9 +9,8 @@ Each binary does one job:
 - `kagi-maps` finds places and addresses
 - `kagi-summarize` summarizes one explicit URL
 
-Output is plain text by default and compact JSON with `--json`, so it works well for terminal use and agentic pipelines.
-
-Requires a Kagi account with an active session token.
+Output is plain text by default and compact JSON with `--json`, for scripts and agents. You need a
+Kagi account and its session token.
 
 ## Install
 
@@ -20,8 +20,8 @@ Requires a Kagi account with an active session token.
 curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh
 ```
 
-The installer puts `kagi-search`, `kagi-maps`, and `kagi-summarize` in `~/.local/bin`. On the upgrade
-from 0.5 or earlier, it removes the `kagi` agent skill and the links that release installed.
+The installer puts `kagi-search`, `kagi-maps`, and `kagi-summarize` in `~/.local/bin`. On the
+upgrade from 0.5 or earlier, it removes the `kagi` agent skill and the links that release installed.
 
 Run the same command again to update. When `~/.local/bin/kagi-search --version` already shows the
 target version, the installer says so and changes nothing.
@@ -42,8 +42,8 @@ curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | s
 Supported platforms: Linux x86_64 and macOS aarch64.
 
 When the GitHub CLI (`gh`) is available, the installer verifies the build provenance attestation of
-the release archive before it changes a file; without `gh` it warns and continues. For a fully
-verifiable install path, prefer the Nix flake below: `flake.lock` pins every input by hash.
+the release archive before it changes a file. Without `gh`, it warns and continues. The Nix flake
+below is the fully verifiable path: `flake.lock` pins every input by hash.
 
 The release also attests `install.sh`. To verify the installer before you run it:
 
@@ -65,17 +65,6 @@ curl -fsSLO https://github.com/rubas/kagi/releases/latest/download/install.sh &&
 ```bash
 cargo install --git https://github.com/rubas/kagi.git
 ```
-
-For local development with the required native build tools:
-
-```bash
-nix develop
-task check
-```
-
-`task lint` also runs [zizmor](https://github.com/zizmorcore/zizmor) over the
-workflows, and the dev shell does not include it. Install `zizmor` separately or
-that step fails.
 
 ### With Nix flakes
 
@@ -108,11 +97,11 @@ Or enable the Home Manager module to install the CLIs:
 
 You need a Kagi session token. The binaries check these sources in order:
 
-1. `KAGI_SESSION_TOKEN` environment variable (ignored when empty)
-2. `$XDG_CONFIG_HOME/kagi/session-token`, falling back to
-   `~/.config/kagi/session-token` when `XDG_CONFIG_HOME` is unset, empty, or
-   relative
-3. Fail with an error if neither is set
+1. The `KAGI_SESSION_TOKEN` environment variable, when it is not empty.
+2. `$XDG_CONFIG_HOME/kagi/session-token`, or `~/.config/kagi/session-token` when `XDG_CONFIG_HOME`
+   is unset, empty, or relative.
+
+Without either, they stop with an error.
 
 Create the token file with owner-only permissions (paste the token, then
 Ctrl-D):
@@ -122,26 +111,18 @@ install -d -m 700 ~/.config/kagi
 (umask 077; cat > ~/.config/kagi/session-token)
 ```
 
-The token is a full kagi.com session cookie, so the binaries refuse a token
-file that is group- or world-readable (`chmod 600` fixes it). The permission
-check does not apply to `KAGI_SESSION_TOKEN`. The binaries never embed or
-store secrets.
+The token is a full kagi.com session cookie, so the binaries refuse a token file that is group- or
+world-readable (`chmod 600` fixes it). This check does not apply to `KAGI_SESSION_TOKEN`. The
+binaries never embed or store secrets.
 
 ## Binaries
 
+Each binary lists all its flags with `--help`.
+
 ### `kagi-search`
 
-Search the web with Kagi.
-
-Usage:
-
-```bash
-kagi-search [OPTIONS] <QUERY>...
-```
-
-Run the binary with `--help` for all flags.
-
-Examples:
+Searches the web. The text output is numbered results and, when Kagi has them, `Related:` terms.
+The JSON is `{ "results": [...], "related": [...] }`.
 
 ```bash
 kagi-search 'rust async runtime' --lens programming --limit 5
@@ -151,17 +132,8 @@ kagi-search 'memory leak' --site github.com --filetype rs --json
 
 ### `kagi-maps`
 
-Search Kagi Maps for places, businesses, points of interest, and addresses.
-
-Usage:
-
-```bash
-kagi-maps [OPTIONS] <QUERY>...
-```
-
-Run the binary with `--help` for all flags.
-
-Examples:
+Searches Kagi Maps for places, businesses, and addresses. The text output is numbered places with
+the address, coordinates, rating, phone, and URL that Kagi has. The JSON is `{ "results": [...] }`.
 
 ```bash
 kagi-maps 'coffee zurich' --ll 47.3769,8.5417 --zoom 13
@@ -170,17 +142,8 @@ kagi-maps 'bookstore near bern' --sort rating --json
 
 ### `kagi-summarize`
 
-Summarize one explicit URL with Kagi.
-
-Usage:
-
-```bash
-kagi-summarize [OPTIONS] <URL>
-```
-
-Run the binary with `--help` for all flags.
-
-Examples:
+Summarizes one explicit URL. The text output is the raw Markdown summary. The JSON is
+`{ "summary": "..." }`.
 
 ```bash
 kagi-summarize 'https://www.rust-lang.org/learn'
@@ -188,22 +151,15 @@ kagi-summarize 'https://www.rust-lang.org/learn' --type takeaway
 kagi-summarize 'https://www.rust-lang.org/learn' --lang DE --json
 ```
 
-## Output
+## Development
 
-`kagi-search` returns:
+```bash
+nix develop
+task check
+```
 
-- text: numbered results plus optional `Related:` terms
-- json: `{ "results": [...], "related": [...] }`
-
-`kagi-maps` returns:
-
-- text: numbered places with address, coordinates, rating, phone, and URL when present
-- json: `{ "results": [...] }`
-
-`kagi-summarize` returns:
-
-- text: raw markdown summary
-- json: `{ "summary": "..." }`
+`task lint` also runs [zizmor](https://github.com/zizmorcore/zizmor) over the workflows. The dev
+shell does not include it, so install `zizmor` yourself or that step fails.
 
 ## License
 
