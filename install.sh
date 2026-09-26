@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Install or update kagi-search, kagi-maps, kagi-summarize, and the kagi skill.
+# Install or update kagi-search, kagi-maps, and kagi-summarize.
 #
 # usage: install.sh [--check] [--force] [<version-tag>]
 #
@@ -107,50 +107,24 @@ fi
 tar -xzf "$tmp/${root}.tar.gz" -C "$tmp"
 
 # Fail before touching any installed files if the archive layout drifted.
-for file in bin/kagi-search bin/kagi-maps bin/kagi-summarize skills/kagi/SKILL.md; do
+for file in bin/kagi-search bin/kagi-maps bin/kagi-summarize; do
   if [ ! -f "$tmp/$root/$file" ]; then
     echo "unexpected archive layout: missing $root/$file" >&2
     exit 1
   fi
 done
 
-# The per-binary skill dirs of v0.4 and earlier are legacy; remove them.
-for dir in .agents/skills .claude/skills .codex/skills .gemini/antigravity-cli/skills .pi/agent/skills; do
-  rm -rf "$HOME/$dir/kagi-search" "$HOME/$dir/kagi-maps" "$HOME/$dir/kagi-summarize"
-done
-
-# The skill has one source, ~/.agents/skills/kagi.
-skill="$HOME/.agents/skills/kagi"
-rm -rf "$skill"
-install -d "$skill"
-install -m 644 "$tmp/$root/skills/kagi/SKILL.md" "$skill/SKILL.md"
-skill="$(cd "$skill" && pwd -P)"
-
-# Each agent whose config root exists gets a relative link to the skill. Like
-# the realpath -m --relative-to of a dotfiles fan-out, the target runs between
-# the physical paths, so it resolves through a symlinked config root and the
-# installer and the fan-out never replace each other's link.
-link() { # <agent config root>
-  [ -d "$HOME/$1" ] || return 0
-  install -d "$HOME/$1/skills"
-  dir="$(cd "$HOME/$1/skills" && pwd -P)"
-  # A skills dir that is the source dir already holds the skill.
-  [ "$dir/kagi" != "$skill" ] || return 0
-  base="$dir"
-  up=""
-  while :; do
-    case "$skill" in "$base"/*) break ;; esac
-    base="${base%/*}"
-    up="../$up"
+# Releases up to 0.5.4 installed an agent skill: one kagi dir plus its links,
+# or per-binary dirs in v0.4 and earlier. Remove them only on the upgrade from
+# such a release, so a skill the user brings under the same name survives.
+case "$installed" in
+0.[0-5].*)
+  for dir in .agents/skills .claude/skills .codex/skills .gemini/antigravity-cli/skills .pi/agent/skills; do
+    rm -rf "$HOME/$dir/kagi" "$HOME/$dir/kagi-search" "$HOME/$dir/kagi-maps" "$HOME/$dir/kagi-summarize"
   done
-  rm -rf "$dir/kagi"
-  ln -s "$up${skill#"$base"/}" "$dir/kagi"
-  echo "linked $HOME/$1/skills/kagi -> $up${skill#"$base"/}"
-}
-link .claude
-link .codex
-link .gemini/antigravity-cli
-link .pi/agent
+  echo "removed the kagi agent skill that kagi ${installed} installed"
+  ;;
+esac
 
 # kagi-search goes last: its --version marks the install as current, so an
 # install that fails before it runs again in full.
@@ -158,4 +132,4 @@ install -d "$bin_dir"
 for bin in kagi-maps kagi-summarize kagi-search; do
   install -m 755 "$tmp/$root/bin/$bin" "$bin_dir/$bin"
 done
-echo "installed kagi ${target}: kagi-search, kagi-maps, and kagi-summarize in ${bin_dir}, the skill in ${skill}"
+echo "installed kagi ${target}: kagi-search, kagi-maps, and kagi-summarize in ${bin_dir}"

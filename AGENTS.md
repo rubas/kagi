@@ -1,7 +1,7 @@
 # kagi
 
-Three Unix-style CLIs for Kagi, `kagi-search`, `kagi-maps`, and `kagi-summarize`, and one agent
-skill, `skills/kagi`, for all three. `README.md` covers install, the token, and usage.
+Three Unix-style CLIs for Kagi: `kagi-search`, `kagi-maps`, and `kagi-summarize`. `README.md`
+covers install, the token, and usage.
 
 ## Gates
 
@@ -17,21 +17,14 @@ skill, `skills/kagi`, for all three. `README.md` covers install, the token, and 
 
 - Keep three separate binaries. Do not add a combined command again.
 - Never hardcode a session token.
-- A rename of the skill changes all of these together:
-  - `install.sh` and the `install` task in `Taskfile.yml`
-  - `postInstall` and `skillNames` in `flake.nix`
-  - `.github/workflows/release.yml`
-  - the `name:` front matter in `skills/kagi/SKILL.md`
-  - the install paths in `README.md`
 - `--sort` means two things. `kagi-search` sends it to Kagi as the `order` parameter. `kagi-maps`
   gets the whole result page, sorts it locally, then cuts it to `--limit`.
 - `install.sh` is the one installer. `task install` and the release smoke test run it on local
-  archives. It installs the skill once to `~/.agents/skills/kagi` and links it into the skill
-  directory of each agent. Each link target is the path `realpath -m --relative-to` gives between
-  the physical paths, the same link a dotfiles fan-out from `~/.agents/skills` makes. Keep the two
-  identical, or the installer and the fan-out replace each other's links on every run.
-  `task install` packs the local build like a release archive, so it runs only on the two release
-  platforms.
+  archives. `task install` packs the local build like a release archive, so it runs only on the
+  two release platforms.
+- The repo ships no agent skill. An agent that uses these CLIs brings its own. On the upgrade from
+  0.5 or earlier, `install.sh` removes the skill that release installed. Later runs leave any
+  `kagi` skill alone.
 - A version bump is the release trigger. On each push to `main`, `release.yml` reads `version`
   from `Cargo.toml`. When the tag `v<version>` does not exist, it tags and publishes. The tag
   decides, not the parent commit, so a push of many commits or a cancelled run does not lose a
