@@ -20,21 +20,8 @@ Requires a Kagi account with an active session token.
 curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh
 ```
 
-The installer puts `kagi-search`, `kagi-maps`, and `kagi-summarize` in `~/.local/bin` and the
-`kagi` skill in `~/.agents/skills/kagi`. It links the skill into the skill directory of each agent
-whose configuration directory exists:
-
-| Agent directory             | Link                                                                      |
-| --------------------------- | ------------------------------------------------------------------------- |
-| `~/.claude`                 | `~/.claude/skills/kagi` -> `../../.agents/skills/kagi`                    |
-| `~/.codex`                  | `~/.codex/skills/kagi` -> `../../.agents/skills/kagi`                     |
-| `~/.gemini/antigravity-cli` | `~/.gemini/antigravity-cli/skills/kagi` -> `../../../.agents/skills/kagi` |
-| `~/.pi/agent`               | `~/.pi/agent/skills/kagi` -> `../../../.agents/skills/kagi`               |
-
-A link replaces a skill directory that an older installer copied there. When a configuration
-directory or its `skills` directory is a symlink, the link target is the relative path between the
-resolved directories, the same path `realpath --relative-to` gives. A `skills` directory that links
-to `~/.agents/skills` already holds the skill and gets no link.
+The installer puts `kagi-search`, `kagi-maps`, and `kagi-summarize` in `~/.local/bin`. On the upgrade
+from 0.5 or earlier, it removes the `kagi` agent skill and the links that release installed.
 
 Run the same command again to update. When `~/.local/bin/kagi-search --version` already shows the
 target version, the installer says so and changes nothing.
@@ -43,7 +30,7 @@ Put a release tag or an option after `sh -s --`:
 
 ```bash
 # Install a given release.
-curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- v0.5.4
+curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- v0.6.0
 # Show the installed and the latest version, and install nothing.
 curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- --check
 ```
@@ -98,7 +85,7 @@ Install the CLIs directly:
 nix profile install github:rubas/kagi
 ```
 
-Or enable the Home Manager module to install the CLIs and companion skills:
+Or enable the Home Manager module to install the CLIs:
 
 ```nix
 {
@@ -217,12 +204,6 @@ kagi-summarize 'https://www.rust-lang.org/learn' --lang DE --json
 
 - text: raw markdown summary
 - json: `{ "summary": "..." }`
-
-## Skills
-
-This repo ships one companion skill for Claude Code and other agents:
-
-- [`skills/kagi/SKILL.md`](skills/kagi/SKILL.md): one skill covering search, maps, and summarize
 
 ## License
 

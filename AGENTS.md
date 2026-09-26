@@ -3,7 +3,6 @@
 ## Goal
 
 Unofficial Unix-style CLIs for Kagi: `kagi-search`, `kagi-maps`, `kagi-summarize`.
-Each binary ships a companion agent skill from `skills/`.
 
 ## Gates
 
@@ -19,16 +18,6 @@ Each binary ships a companion agent skill from `skills/`.
   needs `KAGI_SESSION_TOKEN` or `~/.config/kagi/session-token` and fails without
   one.
 
-## Layout
-
-- `skills/kagi` is the one skill; it installs as `kagi`. A rename changes all
-  of these together:
-  - `install.sh` and the `install` task in `Taskfile.yml`
-  - `postInstall` and `skillNames` in `flake.nix`
-  - `.github/workflows/release.yml`
-  - the `name:` front matter in each `skills/*/SKILL.md`
-  - the documented install paths in `README.md`
-
 ## Decisions
 
 - Three separate binaries. Do not reintroduce a combined command.
@@ -40,13 +29,11 @@ Each binary ships a companion agent skill from `skills/`.
   `order` parameter. `kagi-maps` fetches the whole page, sorts locally, then
   truncates to `--limit`.
 - `install.sh` is the one installer. `task install` and the release smoke test
-  run it on local archives. It installs the skill once to
-  `~/.agents/skills/kagi` and links it into each agent's skill dir. The link
-  targets are the ones `realpath -m --relative-to` gives between the physical
-  paths, the same links a dotfiles fan-out from `~/.agents/skills` creates.
-  Keep them byte-identical, or the installer and the fan-out replace each
-  other's links on every run. `task install` packs the local build like a
+  run it on local archives. `task install` packs the local build like a
   release archive, so it runs only on the two release platforms.
+- The repo ships no agent skill; an agent that uses these CLIs brings its own.
+  On the upgrade from 0.5 or earlier, `install.sh` removes the skill that
+  release installed; later runs leave any `kagi` skill alone.
 - A version bump is the release trigger: on each push to `main`, `release.yml`
   reads `version` from `Cargo.toml`. When the tag `v<version>` does not exist,
   it tags and publishes. The tag decides, not the parent commit, so a

@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-09-26
+
+### Removed
+
+- The `kagi` agent skill. Releases no longer ship `skills/kagi`, and the Home
+  Manager module installs only the CLIs. On the upgrade from 0.5 or earlier,
+  `install.sh` removes `~/.agents/skills/kagi` and its links in `~/.claude/skills`,
+  `~/.codex/skills`, `~/.gemini/antigravity-cli/skills`, and
+  `~/.pi/agent/skills`. Each binary's `--help` lists every flag.
+
 ## [0.5.4] - 2026-09-23
 
 ### Added
