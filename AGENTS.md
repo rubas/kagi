@@ -7,7 +7,6 @@ Each binary ships a companion agent skill from `skills/`.
 
 ## Gates
 
-- `task check` (fmt:check, lint, test) before you push.
 - `task ci` adds the release-profile check, `nix build`, cargo-machete, and
   cargo-deny. GitHub Actions runs every one of those except `task test:nix`, so
   run `task ci` yourself after you touch `flake.nix`, `flake.lock`, or
@@ -18,14 +17,10 @@ Each binary ships a companion agent skill from `skills/`.
 - `task test:live` hits the real Kagi service. Run it when you change the
   request path or a parser: `src/cli.rs`, `src/client.rs`, or `src/parse.rs`. It
   needs `KAGI_SESSION_TOKEN` or `~/.config/kagi/session-token` and fails without
-  one. `task test:live:advisory` gives the same signal without failing the task.
+  one.
 
 ## Layout
 
-- `src/cli.rs`: argument definitions and the `as_api_value` tables that turn
-  `--lens`, `--sort`, `--time`, and `--type` into raw Kagi parameter values.
-- `src/client.rs`: token resolution, HTTP client, Kagi request parameters.
-- `src/parse.rs`: search HTML, maps JSON, summarize stream.
 - `skills/kagi` is the one skill; it installs as `kagi`. A rename changes all
   of these together:
   - `install.sh` and the `install` task in `Taskfile.yml`
@@ -33,7 +28,6 @@ Each binary ships a companion agent skill from `skills/`.
   - `.github/workflows/release.yml`
   - the `name:` front matter in each `skills/*/SKILL.md`
   - the documented install paths in `README.md`
-- `tests/live.rs` runs only under `--ignored`.
 
 ## Decisions
 
