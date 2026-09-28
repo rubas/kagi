@@ -7,7 +7,7 @@ on:
   schedule:
     # Weekly advisory sweep so new RUSTSEC advisories against the merged
     # lockfile surface between commits.
-    - cron: "17 6 * * 1"
+    - cron: "37 6 * * 1"
 
 permissions: {}
 
