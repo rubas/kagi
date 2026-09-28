@@ -2,9 +2,10 @@
 # cannot call a reusable workflow in the private rubas/ci. Keep it in sync by
 # hand when rubas/ci changes.
 #
-# Auth: no GitHub secrets. The job mints a GitHub OIDC token, exchanges it for
-# a short-lived Infisical token over the read-only identity ci-review, and reads
-# the shared Claude OAuth token. All values below are identifiers, safe to
+# Auth: no GitHub secrets and no Claude GitHub App. The job mints a GitHub OIDC
+# token, exchanges it for a short-lived Infisical token over the read-only
+# identity ci-review, and reads the shared Claude OAuth token. The action gets
+# the job token for GitHub. All values below are identifiers, safe to
 # commit; only the token is a secret and it never leaves Infisical.
 name: Claude Code Review
 
@@ -39,7 +40,7 @@ jobs:
       contents: read # source and history context
       actions: read # workflow-runs API: find the last reviewed commit
       pull-requests: write # inline review comments
-      id-token: write # OIDC for Claude app token + Infisical secret fetch
+      id-token: write # OIDC for the Infisical secret fetch
     env:
       # --max-turns is a runaway backstop, not the cost guard; `timeout-minutes`
       # above is. Agent mode spends no turn on a checklist update, so this only
@@ -234,6 +235,12 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         with:
+          # The job token, not the Claude GitHub App token the action would get
+          # from Anthropic, so the review needs no app installed on this repo.
+          github_token: ${{ github.token }}
+          # The action refuses a bot actor unless it is listed here. The agents
+          # open and push PRs as rubas-agent[bot] (rubas/ops#107).
+          allowed_bots: rubas-agent
           # Subscription OAuth keeps this work off metered API credits.
           claude_code_oauth_token: ${{ steps.claude-oauth.outputs.token_1 }}
           prompt: ${{ steps.prompt.outputs.text }}
@@ -246,6 +253,8 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         with:
+          github_token: ${{ github.token }}
+          allowed_bots: rubas-agent
           claude_code_oauth_token: ${{ steps.claude-oauth.outputs.token_2 }}
           prompt: ${{ steps.prompt.outputs.text }}
           claude_args: ${{ env.CLAUDE_ARGS }}
@@ -257,6 +266,8 @@ jobs:
         continue-on-error: true
         timeout-minutes: 15
         with:
+          github_token: ${{ github.token }}
+          allowed_bots: rubas-agent
           claude_code_oauth_token: ${{ steps.claude-oauth.outputs.token_3 }}
           prompt: ${{ steps.prompt.outputs.text }}
           claude_args: ${{ env.CLAUDE_ARGS }}
