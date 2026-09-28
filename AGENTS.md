@@ -39,5 +39,5 @@ covers install, the token, and usage.
   `Cargo.toml`, or `nix build` makes a package with the old version.
 - `install.sh` runs under `sh` on Linux with GNU tools and on macOS with BSD tools. Use POSIX sh
   and only flags that both sets have: no `realpath --relative-to`, no `ln -T`.
-- `ci.yml` skips a pull request whose author is not the repository owner. A contributor PR shows
-  no checks. That is the gate, not a broken run.
+- `ci.yml` runs its checks only on a pull request from a branch of this repo, so a fork PR never
+  reaches the incus runners. A fork PR shows no checks. That is the gate, not a broken run.
