@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Removed
+
+- `install.sh`. Releases no longer ship it. Install with mise instead:
+  `mise use -g github:rubas/kagi`. The release archives keep their names and
+  their attestation.
+- The Nix flake, with its package, dev shell, and Home Manager module.
+
 ## [0.6.1] - 2026-09-30
 
 ### Removed
