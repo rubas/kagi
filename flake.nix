@@ -38,7 +38,7 @@
           craneLib = crane.mkLib pkgs;
           commonArgs = {
             pname = "kagi";
-            version = "0.6.0";
+            version = "0.6.1";
             src = pkgs.lib.cleanSource ./.;
             strictDeps = true;
             nativeBuildInputs = [

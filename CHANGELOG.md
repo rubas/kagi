@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] - 2026-09-30
+
+### Removed
+
+- The cleanup of the agent skill that 0.5 and earlier installed. `install.sh` no
+  longer deletes a `kagi` skill dir on the upgrade from such a release.
+
 ## [0.6.0] - 2026-09-26
 
 ### Removed
