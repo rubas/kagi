@@ -14,82 +14,17 @@ Kagi account and its session token.
 
 ## Install
 
-### From a GitHub release
+Releases ship Linux x86_64 and macOS aarch64 builds. Install them with [mise](https://mise.jdx.dev),
+which verifies the GitHub attestation of the release archive:
 
 ```bash
-curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh
+mise use -g github:rubas/kagi
 ```
 
-The installer puts `kagi-search`, `kagi-maps`, and `kagi-summarize` in `~/.local/bin`.
-
-Run the same command again to update. When `~/.local/bin/kagi-search --version` already shows the
-target version, the installer says so and changes nothing.
-
-Put a release tag or an option after `sh -s --`:
+Without mise, build from source:
 
 ```bash
-# Install a given release.
-curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- v0.6.1
-# Show the installed and the latest version, and install nothing.
-curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- --check
-```
-
-- `--check` exits 0 when the installed version matches the target and 100 when kagi is not
-  installed or has a different version.
-- `--force` installs again when the version already matches.
-
-Supported platforms: Linux x86_64 and macOS aarch64.
-
-When the GitHub CLI (`gh`) is available, the installer verifies the build provenance attestation of
-the release archive before it changes a file. Without `gh`, it warns and continues. The Nix flake
-below is the fully verifiable path: `flake.lock` pins every input by hash.
-
-The release also attests `install.sh`. To verify the installer before you run it:
-
-```bash
-curl -fsSLO https://github.com/rubas/kagi/releases/latest/download/install.sh &&
-  gh attestation verify install.sh --repo rubas/kagi &&
-  KAGI_INSTALL_VERIFY=require sh install.sh
-```
-
-| Variable                | Effect                                                                                                                  |
-| ----------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| `KAGI_INSTALL_VERIFY`   | `auto` (default) verifies when `gh` is available. `require` fails without `gh`. `skip` does not verify.                 |
-| `KAGI_INSTALL_BASE_URL` | Downloads the archive from this URL instead of the GitHub release, for example `file:///tmp/kagi`. Needs a version tag. |
-| `KAGI_INSTALL_VERSION`  | The version tag when no argument gives one.                                                                             |
-| `KAGI_INSTALL_REPO`     | The GitHub repository, `rubas/kagi` by default.                                                                         |
-
-### From source
-
-```bash
-cargo install --git https://github.com/rubas/kagi.git
-```
-
-### With Nix flakes
-
-Install the CLIs directly:
-
-```bash
-nix profile install github:rubas/kagi
-```
-
-Or enable the Home Manager module to install the CLIs:
-
-```nix
-{
-  inputs.kagi.url = "github:rubas/kagi";
-
-  outputs = { kagi, ... }: {
-    homeConfigurations.example = home-manager.lib.homeManagerConfiguration {
-      modules = [
-        kagi.homeManagerModules.default
-        {
-          programs.kagi.enable = true;
-        }
-      ];
-    };
-  };
-}
+cargo install --git https://github.com/rubas/kagi
 ```
 
 ## Authentication
@@ -153,12 +88,11 @@ kagi-summarize 'https://www.rust-lang.org/learn' --lang DE --json
 ## Development
 
 ```bash
-nix develop
 task check
 ```
 
-`task lint` also runs [zizmor](https://github.com/zizmorcore/zizmor) over the workflows. The dev
-shell does not include it, so install `zizmor` yourself or that step fails.
+`task lint` also runs [zizmor](https://github.com/zizmorcore/zizmor) over the workflows, so install
+`zizmor` first.
 
 ## License
 

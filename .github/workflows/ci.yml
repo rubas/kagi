@@ -72,7 +72,6 @@ jobs:
       # task and zizmor come with the incus runner image.
       - run: task fmt:check
       - run: task lint
-      - run: shellcheck install.sh
       - run: task test
       - run: task test:release-check
       - run: task deps:machete

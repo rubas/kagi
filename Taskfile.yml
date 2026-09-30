@@ -63,11 +63,6 @@ tasks:
     cmds:
       - cargo check --release
 
-  test:nix:
-    desc: Build the default Nix package
-    cmds:
-      - nix build .# --no-link
-
   deps:machete:
     desc: Check for unused dependencies
     cmds:
@@ -103,7 +98,6 @@ tasks:
       - task lint
       - task test
       - task test:release-check
-      - task test:nix
       - task deps:machete
       - task deps:deny
 
@@ -111,15 +105,3 @@ tasks:
     desc: Build the release binary
     cmds:
       - cargo build --release
-
-  install:
-    desc: Install the local build with install.sh, in the same layout as a release (Linux x86_64 and macOS aarch64 only)
-    vars:
-      ROOT: '{{if eq OS "darwin"}}kagi-macos-aarch64{{else}}kagi-linux-x86_64{{end}}'
-    cmds:
-      - cargo build --release
-      - rm -rf target/dist
-      - mkdir -p target/dist/{{.ROOT}}/bin
-      - cp target/release/kagi-search target/release/kagi-maps target/release/kagi-summarize target/dist/{{.ROOT}}/bin/
-      - tar -czf target/dist/{{.ROOT}}.tar.gz -C target/dist {{.ROOT}}
-      - KAGI_INSTALL_BASE_URL="file://$PWD/target/dist" KAGI_INSTALL_VERIFY=skip sh install.sh --force "v$(target/release/kagi-search --version | cut -d' ' -f2)"
