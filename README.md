@@ -20,8 +20,7 @@ Kagi account and its session token.
 curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh
 ```
 
-The installer puts `kagi-search`, `kagi-maps`, and `kagi-summarize` in `~/.local/bin`. On the
-upgrade from 0.5 or earlier, it removes the `kagi` agent skill and the links that release installed.
+The installer puts `kagi-search`, `kagi-maps`, and `kagi-summarize` in `~/.local/bin`.
 
 Run the same command again to update. When `~/.local/bin/kagi-search --version` already shows the
 target version, the installer says so and changes nothing.
@@ -30,7 +29,7 @@ Put a release tag or an option after `sh -s --`:
 
 ```bash
 # Install a given release.
-curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- v0.6.0
+curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- v0.6.1
 # Show the installed and the latest version, and install nothing.
 curl -fsSL https://github.com/rubas/kagi/releases/latest/download/install.sh | sh -s -- --check
 ```

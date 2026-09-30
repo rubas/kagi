@@ -24,9 +24,7 @@ covers install, the token, and usage.
 - `install.sh` is the one installer. `task install` and the release smoke test run it on local
   archives. `task install` packs the local build like a release archive, so it runs only on the
   two release platforms.
-- The repo ships no agent skill. An agent that uses these CLIs brings its own. On the upgrade from
-  0.5 or earlier, `install.sh` removes the skill that release installed. Later runs leave any
-  `kagi` skill alone.
+- The repo ships no agent skill. The `search` skill in rubas/dotfiles covers these CLIs.
 - A version bump is the release trigger. On each push to `main`, `release.yml` reads `version`
   from `Cargo.toml`. When the tag `v<version>` does not exist, it tags and publishes. The tag
   decides, not the parent commit, so a push of many commits or a cancelled run does not lose a

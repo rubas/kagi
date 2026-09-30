@@ -208,11 +208,8 @@ jobs:
           kagi_install() { HOME="$home" KAGI_INSTALL_BASE_URL="$dist" sh dist/install.sh "$@"; }
           snapshot() { find "$home" -printf '%i %T@ %p %l\n' | sort; }
 
-          # The upgrade from 0.5 removes the skill that release installed, its
-          # links, and a v0.4 per-binary skill dir.
-          mkdir -p "$home/.local/bin" "$home/.agents/skills/kagi" "$home/.agents/skills/kagi-search" \
-            "$home/.codex/skills"
-          ln -s ../../.agents/skills/kagi "$home/.codex/skills/kagi"
+          # An upgrade replaces the installed version.
+          mkdir -p "$home/.local/bin"
           printf '#!/bin/sh\necho kagi-search 0.5.4\n' > "$home/.local/bin/kagi-search"
           chmod +x "$home/.local/bin/kagi-search"
           status=0
@@ -223,10 +220,6 @@ jobs:
           test -x "$home/.local/bin/kagi-search"
           test -x "$home/.local/bin/kagi-maps"
           test -x "$home/.local/bin/kagi-summarize"
-          test ! -e "$home/.agents/skills/kagi"
-          test ! -e "$home/.agents/skills/kagi-search"
-          test ! -L "$home/.codex/skills/kagi"
-          test ! -e "$home/.pi"
 
           # A second run finds the current version and changes nothing.
           before="$(snapshot)"
@@ -234,15 +227,13 @@ jobs:
           test "$before" = "$(snapshot)"
           kagi_install --check "$TAG"
 
-          # A first install removes nothing: a skill the user brings stays.
+          # A first install.
           home="$(mktemp -d)"
-          mkdir -p "$home/.agents/skills/kagi"
           status=0
           kagi_install --check "$TAG" || status=$?
           test "$status" -eq 100
           kagi_install "$TAG"
           test -x "$home/.local/bin/kagi-search"
-          test -d "$home/.agents/skills/kagi"
       - name: Write release notes
         shell: bash
         env:
