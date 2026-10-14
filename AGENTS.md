@@ -26,12 +26,6 @@ covers install, the token, and usage.
   release. A tag that someone deletes comes back on the next push. To recover a failed build or
   release, run `release.yml` through `workflow_dispatch`.
 
-- `main` requires signed commits, and the bot cannot sign a commit. It also cannot read the rule,
-  so a PR with commits from a plain `git push` shows only `BLOCKED`. Commit through the GraphQL
-  mutation `createCommitOnBranch`, which GitHub signs: stage the change, then run
-  `gh-signed-commit "<headline>" ["<body>"]` from rubas/dotfiles. It also creates the branch on
-  GitHub.
-
 ## Pitfalls
 
 - `ci.yml` runs its checks only on a pull request from a branch of this repo, so a fork PR never
