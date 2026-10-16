@@ -13,6 +13,9 @@ and this project follows [Semantic Versioning](https://semver.org/).
   `mise use -g github:rubas/kagi`. The release archives keep their names and
   their attestation.
 - The Nix flake, with its package, dev shell, and Home Manager module.
+- `kagi::resolve_session_token_for_tests` from the library API, and the
+  `test:live:advisory` task. The live tests now fail without a usable session
+  token. Before, they skipped and passed.
 
 ## [0.6.1] - 2026-09-30
 
