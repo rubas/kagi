@@ -1,20 +1,13 @@
 use assert_cmd::Command;
 use predicates::prelude::*;
 
-fn token() -> Option<String> {
-    kagi::resolve_session_token_for_tests().ok()
-}
+// Each binary resolves the session token itself, so a missing or unusable
+// token fails these tests instead of skipping them.
 
 #[test]
 #[ignore = "live test requiring a real Kagi session token"]
 fn live_search_returns_results() {
-    let Some(token) = token() else {
-        eprintln!("skipping live_search_returns_results: no token found via env or config file");
-        return;
-    };
-
     let output = Command::new(assert_cmd::cargo::cargo_bin!("kagi-search"))
-        .env("KAGI_SESSION_TOKEN", token)
         .args(["--json", "--limit", "3", "rust programming language"])
         .output()
         .unwrap();
@@ -43,13 +36,7 @@ fn live_search_rejects_bogus_token() {
 #[test]
 #[ignore = "live test requiring a real Kagi session token"]
 fn live_summarize_returns_json() {
-    let Some(token) = token() else {
-        eprintln!("skipping live_summarize_returns_json: no token found via env or config file");
-        return;
-    };
-
     Command::new(assert_cmd::cargo::cargo_bin!("kagi-summarize"))
-        .env("KAGI_SESSION_TOKEN", token)
         .args(["--json", "https://www.rust-lang.org/learn"])
         .assert()
         .success()
@@ -59,13 +46,7 @@ fn live_summarize_returns_json() {
 #[test]
 #[ignore = "live test requiring a real Kagi session token"]
 fn live_maps_returns_json() {
-    let Some(token) = token() else {
-        eprintln!("skipping live_maps_returns_json: no token found via env or config file");
-        return;
-    };
-
     Command::new(assert_cmd::cargo::cargo_bin!("kagi-maps"))
-        .env("KAGI_SESSION_TOKEN", token)
         .args([
             "--json",
             "--limit",

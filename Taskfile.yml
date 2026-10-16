@@ -37,26 +37,7 @@ tasks:
   test:live:
     desc: Run live integration tests against Kagi using env or XDG token config
     cmds:
-      - |
-        token_file="${XDG_CONFIG_HOME:-$HOME/.config}/kagi/session-token"
-        if [ -z "${KAGI_SESSION_TOKEN:-}" ] && [ ! -s "$token_file" ]; then
-          echo "task test:live requires KAGI_SESSION_TOKEN or $token_file" >&2
-          exit 1
-        fi
       - cargo test --test live -- --ignored --nocapture
-
-  test:live:advisory:
-    desc: Run live integration tests but do not fail the task on test errors
-    cmds:
-      - |
-        token_file="${XDG_CONFIG_HOME:-$HOME/.config}/kagi/session-token"
-        if [ -z "${KAGI_SESSION_TOKEN:-}" ] && [ ! -s "$token_file" ]; then
-          echo "no live token source found; skipping advisory live test"
-          exit 0
-        fi
-        if ! cargo test --test live -- --ignored --nocapture; then
-          echo "live integration test reported failures; advisory task returning success"
-        fi
 
   test:release-check:
     desc: Verify release-profile compilation

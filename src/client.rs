@@ -172,10 +172,6 @@ fn session_token() -> Result<String, Error> {
     )))
 }
 
-pub fn resolve_session_token_for_tests() -> Result<String, Error> {
-    session_token()
-}
-
 fn read_session_token_file() -> Result<Option<String>, Error> {
     for path in session_token_file_candidates() {
         let metadata = match std::fs::metadata(&path) {
