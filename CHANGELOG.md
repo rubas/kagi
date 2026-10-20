@@ -5,7 +5,13 @@ All notable changes to this project are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.7.0] - 2026-10-21
+
+### Security
+
+- The bundled root certificates take the fix for RUSTSEC-2026-0383:
+  `webpki-root-certs` 1.0.10 no longer trusts the distrusted emSign
+  intermediates.
 
 ### Removed
 
