@@ -9,9 +9,9 @@ and this project follows [Semantic Versioning](https://semver.org/).
 
 ### Security
 
-- The TLS roots and the certificate check take the fixes for RUSTSEC-2026-0381,
-  RUSTSEC-2026-0382, and RUSTSEC-2026-0383: `webpki-root-certs` 1.0.10 no
-  longer trusts the distrusted emSign intermediates.
+- The bundled root certificates take the fix for RUSTSEC-2026-0383:
+  `webpki-root-certs` 1.0.10 no longer trusts the distrusted emSign
+  intermediates.
 
 ### Removed
 
