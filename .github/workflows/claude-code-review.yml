@@ -1,12 +1,13 @@
 # Self-contained copy of rubas/ci code-review.yml: this repo is public and
-# cannot call a reusable workflow in the private rubas/ci. Keep it in sync by
-# hand when rubas/ci changes.
+# cannot call a reusable workflow or action in the private rubas/ci. Keep it in
+# sync by hand when rubas/ci changes.
 #
 # Auth: no GitHub secrets and no Claude GitHub App. The job mints a GitHub OIDC
 # token, exchanges it for a short-lived Infisical token over the read-only
-# identity ci-review, and reads the shared Claude OAuth token. The action gets
-# the job token for GitHub. All values below are identifiers, safe to
-# commit; only the token is a secret and it never leaves Infisical.
+# identity ci-review, and reads the babel login of CI from r-ci-repo
+# prod:/babel (rubas/ci README.md, Logins). Claude Code calls the babel gateway
+# on epyc, and babel picks the Claude account. The action gets the job token
+# for GitHub. All values below are identifiers, safe to commit.
 name: Claude Code Review
 
 on:
@@ -33,9 +34,8 @@ jobs:
     # private address, so only these runners reach Infisical. The guard above
     # keeps fork PRs off them.
     runs-on: incus
-    # Each attempt below caps itself at 15 minutes. A failed account fails in
-    # seconds, so this only bounds a pathological run.
-    timeout-minutes: 30
+    # The review step caps itself at 15 minutes.
+    timeout-minutes: 20
     permissions:
       contents: read # source and history context
       actions: read # workflow-runs API: find the last reviewed commit
@@ -91,8 +91,8 @@ jobs:
             echo "no reviewable range, the whole PR gets reviewed"
           fi
 
-      - name: Fetch Claude OAuth token
-        id: claude-oauth
+      - name: Fetch the babel login
+        id: babel
         env:
           # Identifiers only. The runner holds no Infisical client secret.
           INFISICAL_API_URL: https://secrets.rubas.dev/api
@@ -121,40 +121,24 @@ jobs:
           fi
           echo "::add-mask::$TOKEN"
 
-          # One shared path for the whole fleet, so adding an account is a single
-          # write. Every CLAUDE_CODE_OAUTH_TOKEN* key there is one Claude
-          # account; sorting by key gives the same list on every runner.
-          SECRET_PATH="/claude-review"
           SECRETS=$(curl -fsSL -G "$INFISICAL_API_URL/v3/secrets/raw" \
             --data-urlencode "workspaceId=$INFISICAL_PROJECT_ID" \
             --data-urlencode "environment=prod" \
-            --data-urlencode "secretPath=$SECRET_PATH" \
+            --data-urlencode "secretPath=/babel" \
             -H "Authorization: Bearer $TOKEN")
-          mapfile -t CLAUDE_TOKENS < <(jq -r '
-            [ .secrets[]?
-              | select(.secretKey | test("^CLAUDE_CODE_OAUTH_TOKEN(_[0-9]+)?$"))
-              | select(.secretValue != null and .secretValue != "") ]
-            | sort_by(.secretKey) | .[].secretValue' <<<"$SECRETS")
-          COUNT=${#CLAUDE_TOKENS[@]}
-          if [[ "$COUNT" -eq 0 ]]; then
-            echo "::error::no CLAUDE_CODE_OAUTH_TOKEN* at Infisical path $SECRET_PATH (env prod)"
-            exit 1
-          fi
-
-          # Start at a different account per run so one account does not absorb
-          # every review and hit its limit first. Three attempt steps follow, so
-          # a fourth account only widens the rotation.
-          ATTEMPTS=$(( COUNT < 3 ? COUNT : 3 ))
-          for i in $(seq 0 $((ATTEMPTS - 1))); do
-            CLAUDE_TOKEN="${CLAUDE_TOKENS[$(( (GITHUB_RUN_NUMBER + i) % COUNT ))]}"
-            echo "::add-mask::$CLAUDE_TOKEN"
-            echo "token_$((i + 1))=$CLAUDE_TOKEN" >>"$GITHUB_OUTPUT"
+          for name in BABEL_KEY BABEL_POOL_SENTINEL; do
+            value=$(jq -r --arg k "$name" '.secrets[]? | select(.secretKey == $k) | .secretValue // empty' <<<"$SECRETS")
+            if [[ -z "$value" ]]; then
+              echo "::error::no $name at Infisical path /babel (env prod)"
+              exit 1
+            fi
+            echo "::add-mask::$value"
+            echo "${name,,}=$value" >>"$GITHUB_OUTPUT"
           done
-          echo "$COUNT Claude account(s), $ATTEMPTS attempt(s) this run"
 
       - name: Build the review prompt
-        # One copy of the prompt for every attempt below. It has to be a step
-        # output and not job-level env, because it names steps.since. The four
+        # The prompt has to be a step output and not job-level env, because it
+        # names steps.since. The four
         # variable values arrive through env and printf, so the run block holds
         # no expansion and the prompt body stays a quoted heredoc.
         id: prompt
@@ -220,63 +204,33 @@ jobs:
             echo 'REVIEW_PROMPT_EOF'
           } >>"$GITHUB_OUTPUT"
 
-      # Up to three attempts, one Claude account each, in the rotated order the
-      # fetch step wrote. A dead, revoked or rate-limited account fails in
-      # seconds, so the fallback costs a run only when it is needed.
-      #
       # No track_progress. It forces tag mode, which posts a tracking comment
       # per run and injects the whole PR thread into the prompt every round, so
       # each round re-reads settled findings and answers them again. Agent mode
       # makes the prompt the only instruction; the inline-comment MCP server
       # comes from the allowed tools, not from the mode.
-      - name: Claude review (account 1)
-        id: review-1
-        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
-        continue-on-error: true
+      - name: Claude review
+        uses: anthropics/claude-code-action@1d6de8cb0c237e7c15e9e1bdf973826ebae490cc # v1.0.248
         timeout-minutes: 15
+        env:
+          # The babel gateway on epyc. It takes its key from x-api-key and the
+          # pool sentinel from the bearer, and sends each turn on a Claude
+          # account of its pool. The UniFi policy "CI → epyc babel" and the
+          # nftables of epyc admit the runners (rubas/incus services/epyc).
+          ANTHROPIC_BASE_URL: http://epyc.rubas.dev:8787
+          ANTHROPIC_AUTH_TOKEN: ${{ steps.babel.outputs.babel_pool_sentinel }}
         with:
           # The job token, not the Claude GitHub App token the action would get
           # from Anthropic, so the review needs no app installed on this repo.
           github_token: ${{ github.token }}
+          anthropic_api_key: ${{ steps.babel.outputs.babel_key }}
+          prompt: ${{ steps.prompt.outputs.text }}
+          claude_args: ${{ env.CLAUDE_ARGS }}
+          # The runner image ships the pinned CLI and the Bun version of this
+          # action (rubas/incus services/ci/runner-image), so the action skips
+          # both downloads.
+          path_to_claude_code_executable: /usr/local/bin/claude
+          path_to_bun_executable: /usr/local/lib/claude-code-action/bun
           # The action refuses a bot actor unless it is listed here. The agents
           # open and push PRs as rubas-agent[bot] (rubas/ops#107).
           allowed_bots: rubas-agent
-          # Subscription OAuth keeps this work off metered API credits.
-          claude_code_oauth_token: ${{ steps.claude-oauth.outputs.token_1 }}
-          prompt: ${{ steps.prompt.outputs.text }}
-          claude_args: ${{ env.CLAUDE_ARGS }}
-
-      - name: Claude review (account 2)
-        id: review-2
-        if: steps.review-1.outcome == 'failure' && steps.claude-oauth.outputs.token_2 != ''
-        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
-        continue-on-error: true
-        timeout-minutes: 15
-        with:
-          github_token: ${{ github.token }}
-          allowed_bots: rubas-agent
-          claude_code_oauth_token: ${{ steps.claude-oauth.outputs.token_2 }}
-          prompt: ${{ steps.prompt.outputs.text }}
-          claude_args: ${{ env.CLAUDE_ARGS }}
-
-      - name: Claude review (account 3)
-        id: review-3
-        if: steps.review-1.outcome == 'failure' && steps.review-2.outcome != 'success' && steps.claude-oauth.outputs.token_3 != ''
-        uses: anthropics/claude-code-action@cfc3eb22bfed5c26ef66e3223c982af27e4524de # v1.0.231
-        continue-on-error: true
-        timeout-minutes: 15
-        with:
-          github_token: ${{ github.token }}
-          allowed_bots: rubas-agent
-          claude_code_oauth_token: ${{ steps.claude-oauth.outputs.token_3 }}
-          prompt: ${{ steps.prompt.outputs.text }}
-          claude_args: ${{ env.CLAUDE_ARGS }}
-
-      - name: Fail when no account reviewed
-        # The steps above swallow their own failure, so the job needs this to
-        # stay red. A red run also keeps the next run's SINCE at the last commit
-        # that a review really covered.
-        if: steps.review-1.outcome == 'failure' && steps.review-2.outcome != 'success' && steps.review-3.outcome != 'success'
-        run: |
-          echo "::error::Claude review failed on every available account"
-          exit 1
