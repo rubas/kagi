@@ -3,6 +3,16 @@ all-features = true
 
 [advisories]
 version = 2
+# TODO(revert: when wreq-util releases zstd >= 0.14.3, 0x676e67/wreq-util#130): wreq-util 0.2.0,
+# the newest release, needs zstd ^0.13.3. It only calls `stream::write::Encoder::new` and
+# `stream::read::Decoder::new` for TLS certificate compression, and these calls reach none of the
+# affected functions. cargo-deny reports an ignore that matches nothing, so this list cannot
+# outlive the bump.
+ignore = [
+  { id = "RUSTSEC-2026-0391", reason = "affects only raw::{Encoder,Decoder}::with_context" },
+  { id = "RUSTSEC-2026-0398", reason = "affects only the seekable feature, which is off" },
+  { id = "RUSTSEC-2026-0403", reason = "affects only stream::write::Decoder" },
+]
 
 [bans]
 multiple-versions = "warn"
