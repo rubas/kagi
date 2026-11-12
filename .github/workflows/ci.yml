@@ -31,12 +31,12 @@ jobs:
           [ "$(id -u)" -eq 0 ] || sudo=sudo
           $sudo apt-get -o DPkg::Lock::Timeout=180 update -qq
           $sudo apt-get -o DPkg::Lock::Timeout=180 install -y --no-install-recommends cmake libclang-dev
-      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         # zizmor: ignore[superfluous-actions] toolchain pinned deliberately
         with:
           toolchain: stable
           components: rustfmt, clippy
-      - uses: taiki-e/install-action@742a3317eac7bd62f91cd888b4eead5e784ba833 # v2.87.1
+      - uses: taiki-e/install-action@cfdb7ed4ccc7c7dce37759eae89dc5674b469b39 # v2.90.3
         with:
           tool: cargo-machete,cargo-deny
       # Set only after the install steps: they write rustup, its proxies, and
@@ -66,7 +66,7 @@ jobs:
           ci-cache restore cargo-target target || echo "no build from main yet, building cold"
           git ls-files -z | xargs -0 touch
 
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: latest
       # task and zizmor come with the incus runner image.
@@ -95,7 +95,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: dtolnay/rust-toolchain@6bed0761d98439e5a578e2877258200ad565ba87 # stable
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         # zizmor: ignore[superfluous-actions] toolchain pinned deliberately
         with:
           toolchain: stable

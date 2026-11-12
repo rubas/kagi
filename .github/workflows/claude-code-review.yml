@@ -142,7 +142,7 @@ jobs:
       # makes the prompt the only instruction; the inline-comment MCP server
       # comes from the allowed tools, not from the mode.
       - name: Claude review
-        uses: anthropics/claude-code-action@1d6de8cb0c237e7c15e9e1bdf973826ebae490cc # v1.0.248
+        uses: anthropics/claude-code-action@925afb53776cf1a2b738c6bdbed37b4d4000ef13 # v1.0.262
         timeout-minutes: 15
         env:
           # The babel gateway on epyc. It takes its key from x-api-key and the
