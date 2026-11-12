@@ -114,6 +114,9 @@ jobs:
           - os: ubuntu-latest
             archive: kagi-linux-x86_64.tar.gz
             staging: kagi-linux-x86_64
+          - os: ubuntu-24.04-arm
+            archive: kagi-linux-aarch64.tar.gz
+            staging: kagi-linux-aarch64
           - os: macos-latest
             archive: kagi-macos-aarch64.tar.gz
             staging: kagi-macos-aarch64
@@ -186,4 +189,5 @@ jobs:
           body_path: release-notes.md
           files: |
             dist/kagi-linux-x86_64.tar.gz
+            dist/kagi-linux-aarch64.tar.gz
             dist/kagi-macos-aarch64.tar.gz
