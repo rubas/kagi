@@ -14,7 +14,7 @@ Kagi account and its session token.
 
 ## Install
 
-Releases ship Linux x86_64 and macOS aarch64 builds. Install them with [mise](https://mise.jdx.dev),
+Releases ship Linux x86_64, Linux aarch64, and macOS aarch64 builds. Install them with [mise](https://mise.jdx.dev),
 which verifies the GitHub attestation of the release archive:
 
 ```bash

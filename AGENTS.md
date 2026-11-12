@@ -16,8 +16,8 @@ covers install, the token, and usage.
 - `--sort` means two things. `kagi-search` sends it to Kagi as the `order` parameter. `kagi-maps`
   gets the whole result page, sorts it locally, then cuts it to `--limit`.
 - Our machines install the CLIs with mise (`github:rubas/kagi`). mise picks the release archive
-  by the OS and architecture in its name, `kagi-linux-x86_64.tar.gz` or
-  `kagi-macos-aarch64.tar.gz`, and finds the binaries in its `bin/` dir. A change to an archive
+  by the OS and architecture in its name, `kagi-linux-x86_64.tar.gz`, `kagi-linux-aarch64.tar.gz`,
+  or `kagi-macos-aarch64.tar.gz`, and finds the binaries in its `bin/` dir. A change to an archive
   name or layout breaks the install on every machine.
 - The repo ships no agent skill. The `search` skill in rubas/dotfiles covers these CLIs.
 - A version bump is the release trigger. On each push to `main`, `release.yml` reads `version`
