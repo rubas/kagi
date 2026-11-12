@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project follows [Semantic Versioning](https://semver.org/).
 
+## [0.7.3] - 2026-11-12
+
+### Changed
+
+- The CLIs build with wreq 0.16.3 and wreq-util 0.2.1, which bring zstd 0.14 in place of 0.13 and
+  its three advisories (RUSTSEC-2026-0391, RUSTSEC-2026-0398, RUSTSEC-2026-0403).
+
 ## [0.7.2] - 2026-11-12
 
 ### Added
